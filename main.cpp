@@ -6,13 +6,13 @@
 #include "ncurses.h"
 
 #define PAIR_BLANK 0
-#define PAIR_GREEN 1
-#define PAIR_BLANK_SELECTED 2
-#define PAIR_GREEN_SELECTED 3
+#define PAIR_BLANK_SELECTED 1
 
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
+
+const char* DEL_CHAR = "\b \b";
 
 struct dirent{
     string path;
@@ -25,6 +25,8 @@ void list_dir();
 void tickup();
 void tickdown();
 bool comp_pentr(dirent&, dirent&);
+int clamp(int, int, int);
+void string_search(bool&, bool&, bool&);
 
 int selec = 0;
 vector<dirent> pathentrs;
@@ -47,17 +49,16 @@ int main(int argc, char** args){
     list_dir();
     print_dir();
     
-    //TODO name search
     while(cs = getch()){
         bool refr = false;
         bool lp = false;
         bool appn = false;
         
-        //TODO add more key macros
         switch(cs){
         case 'q':
             goto endo;
             break;
+        //up
         case 'w':
             tickup();
             refr = true;
@@ -66,6 +67,7 @@ int main(int argc, char** args){
             tickup();
             refr = true;
             break;
+        //down
         case 's':
             tickdown();
             refr = true;
@@ -74,24 +76,86 @@ int main(int argc, char** args){
             tickdown();
             refr = true;
             break;
-        case 'e':
+        //enter dir
+        case '\n':
             lp = refr = appn = pathentrs[selec].isdir;
             break;
         case 'd':
-            lp = refr = appn  = pathentrs[selec].isdir;
+            lp = refr = appn = pathentrs[selec].isdir;
             break;
         case KEY_RIGHT:
             lp = refr = appn  = pathentrs[selec].isdir;
             break;
+        //exit dir
         case 'a':
             if(pth != "/"){
                 pth = pth.parent_path();
                 lp = refr = true;
             }
             break;
+        case KEY_LEFT:
+            if(pth != "/"){
+                pth = pth.parent_path();
+                lp = refr = true;
+            }
+            break;
+        //next page
+        case KEY_NPAGE:
+            selec = ceil((static_cast<float>(selec) + 1) / (win->_maxy - 1)) * (win->_maxy - 1);
+            selec = selec >= pathentrs.size() ? pathentrs.size() - 1 : selec;
+            refr = true;
+            break;
+        //prev page
+        case KEY_PPAGE:
+            selec = floor(static_cast<float>(selec) / (win->_maxy - 1) - 1) * (win->_maxy - 1);
+            selec = selec < 0 ? 0 : selec;
+            refr = true;
+            break;
+        //next dir
+        case ']':
+            for(int i = selec + 1; i < pathentrs.size(); i++){
+                if(pathentrs[i].isdir || pathentrs[i].islink){
+                    selec = i;
+                    break;
+                }
+            }
+            refr = true;
+            break;
+        case '[':
+            for(int i = selec - 1; i >= 0; i--){
+                if(pathentrs[i].isdir || pathentrs[i].islink){
+                    selec = i;
+                    break;
+                }
+            }
+            refr = true;
+            break;
+        //next file
+        case '.':
+            for(int i = selec + 1; i < pathentrs.size(); i++){
+                if(!pathentrs[i].isdir && !pathentrs[i].islink){
+                    selec = i;
+                    break;
+                }
+            }
+            refr = true;
+            break;
+        case ',':
+            for(int i = selec - 1; i >= 0; i--){
+                if(!pathentrs[i].isdir && !pathentrs[i].islink){
+                    selec = i;
+                    break;
+                }
+            }
+            refr = true;
+            break;
+        //string search
+        case ' ':
+            string_search(lp, refr, appn);
+            break;
         }
         
-        if(appn){
+        if(appn && pathentrs.size() > 0){
             if(pathentrs[selec].islink){
                 pth.append(pathentrs[selec].path);
                 pth = canonical(pth);
@@ -154,7 +218,7 @@ void print_dir(){
     attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
     printw(selecpath.c_str());
     attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
-    
+   
     refresh();
 }
 
@@ -188,4 +252,120 @@ void tickdown(){
 
 bool comp_pentr(dirent& first, dirent& second){
     return first.path < second.path;
+}
+
+int clamp(int value, int min, int max){
+    if(value < min){
+        return min;
+    }else if(value > max){
+        return max;
+    }else{
+        return value;
+    }
+}
+
+void string_search(bool& lp, bool& refr, bool& appn){
+    win->_curx = 0;
+    win->_cury = win->_maxy;
+    printw("\n");
+    attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
+    printw("||");
+    attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
+    win->_curx = 2;
+
+    refresh();
+
+    string spinp = "";
+    int spc = 0;
+    int i;
+    int strpos = 0;
+    int found = -1;
+
+    while(spc = getch()){
+        switch(spc){
+        case '\n': //RETURN KEY
+            if(spinp[0] == '#'){
+               string subsp = spinp.substr(1);
+
+                if(subsp.substr(0, 5) == "goto "){
+                    path gopath = path(subsp.substr(5));
+                    if(is_directory(gopath)){
+                        pth = canonical(gopath);
+                        lp = true;
+                    }
+                }
+            //COMMAND LINE
+            }else if(spinp[0] == '$'){
+                string inlcmd = "cd " + pth.string() + ";" + spinp.substr(1);
+                std::system(inlcmd.c_str());
+            }else if(found > -1){
+                selec = found;
+            }
+
+            spc = -1;
+            break;
+        case '\\':
+            if(found > -1){
+                selec = found;
+                appn = true;
+                lp = true;
+            }
+            
+            spc = -1;
+            break;
+        case '`': //ESCAPE KEY
+            spc = -1;
+            break;
+        case 127: //BACKSPACE KEY
+            if(strpos > 0){
+                spinp.erase(strpos - 1, 1);
+                strpos--;
+            }
+            found = -1;
+            break;
+        case KEY_LEFT:
+            strpos = clamp(--strpos, 0, spinp.size());
+            break;
+        case KEY_RIGHT:
+            strpos = clamp(++strpos, 0, spinp.size());
+            break;
+        default:
+            spinp.insert(strpos, 1, spc);
+            strpos++;
+            found = -1;
+            break;
+        }
+
+        if(spc == -1){
+            refr = true;
+            break;
+        }
+
+        if(found == -1 && spinp.size() > 0){
+            i = 0;
+            for(vector<dirent>::iterator it = pathentrs.begin(); it < pathentrs.end(); it++){
+                if(it->path.substr(0, spinp.size()) == spinp){
+                    found = i;
+                    break;
+                }
+                i++;
+            }
+        }
+
+        win->_curx = 0;
+        printw("\n");
+        attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
+        printw("||");
+        printw(spinp.c_str());
+
+        if(found > -1){
+            printw("\t|| ");
+            printw(pathentrs[found].path.c_str());
+        }
+        attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
+
+        win->_curx = strpos + 2;
+
+        refresh();
+    }
 }

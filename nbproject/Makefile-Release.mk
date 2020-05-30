@@ -52,7 +52,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=
+LDLIBSOPTIONS=-L../../local/lib/boost -lncurses -lboost_filesystem
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -65,7 +65,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/filexplor: ${OBJECTFILES}
 ${OBJECTDIR}/main.o: main.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
+	$(COMPILE.cc) -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
 
 # Subprojects
 .build-subprojects:

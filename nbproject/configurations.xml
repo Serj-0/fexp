@@ -62,7 +62,8 @@
           <developmentMode>5</developmentMode>
         </cTool>
         <ccTool>
-          <developmentMode>5</developmentMode>
+          <developmentMode>0</developmentMode>
+          <standard>8</standard>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -70,6 +71,15 @@
         <asmTool>
           <developmentMode>5</developmentMode>
         </asmTool>
+        <linkerTool>
+          <linkerAddLib>
+            <pElem>../../local/lib/boost</pElem>
+          </linkerAddLib>
+          <linkerLibItems>
+            <linkerLibLibItem>ncurses</linkerLibLibItem>
+            <linkerLibLibItem>boost_filesystem</linkerLibLibItem>
+          </linkerLibItems>
+        </linkerTool>
       </compileType>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
