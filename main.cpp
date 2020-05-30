@@ -6,7 +6,9 @@
 #include "ncurses.h"
 
 #define PAIR_BLANK 0
-#define PAIR_BLANK_SELECTED 1
+#define PAIR_NOREAD 1
+#define PAIR_BLANK_SELECTED 2
+#define PAIR_NOREAD_SELECTED 3
 
 using namespace std;
 using namespace boost;
@@ -18,6 +20,7 @@ struct dirent{
     string path;
     bool isdir;
     bool islink;
+    bool canread;
 };
 
 void print_dir();
@@ -32,8 +35,11 @@ int selec = 0;
 vector<dirent> pathentrs;
 path pth;
 WINDOW* win;
+bool root;
 
 int main(int argc, char** args){
+    root = !getuid();
+    
     pth = argc > 1 ? string(args[1]) : current_path();
     
     win = initscr();
@@ -43,6 +49,8 @@ int main(int argc, char** args){
     
     init_pair(PAIR_BLANK, COLOR_WHITE, COLOR_BLACK);
     init_pair(PAIR_BLANK_SELECTED, COLOR_WHITE, COLOR_BLUE);
+    init_pair(PAIR_NOREAD, COLOR_RED, COLOR_BLACK);
+    init_pair(PAIR_NOREAD_SELECTED, COLOR_RED, COLOR_BLUE);
     
     int cs;
 
@@ -155,12 +163,17 @@ int main(int argc, char** args){
             break;
         }
         
+        //enter directory
         if(appn && pathentrs.size() > 0){
-            if(pathentrs[selec].islink){
-                pth.append(pathentrs[selec].path);
-                pth = canonical(pth);
+            if(pathentrs[selec].canread){
+                if(pathentrs[selec].islink){
+                    pth /= pathentrs[selec].path;
+                    pth = canonical(pth);
+                }else{
+                    pth /= pathentrs[selec].path;
+                }
             }else{
-                pth /= pathentrs[selec].path;
+                lp = false;
             }
         }
         if(lp) list_dir();
@@ -195,9 +208,9 @@ void print_dir(){
     int i = bg;
     for(vector<dirent>::iterator it = pathentrs.begin() + bg;
             it < (ed >= pathentrs.size() ? pathentrs.end() : pathentrs.begin() + ed); it++){
+        int pr = ((i == selec) << 1) + !it->canread;
+        
         if(i == selec){
-            attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
-            
             string lk = "";
             if(it->islink){
                 path lkpath = pth;
@@ -208,9 +221,11 @@ void print_dir(){
             
             selecpath = it->path + lk;
         }
+        
+        attron(COLOR_PAIR(pr));
         string pp = it->path + (it->isdir ? "/" : "") + (it->islink ? " [link]" : "") + "\n";
         printw(pp.c_str());
-        if(i == selec) attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
+        attroff(COLOR_PAIR(pr));
         i++;
     }
     
@@ -226,7 +241,8 @@ void list_dir(){
     pathentrs.clear();
     directory_iterator end;
     for(directory_iterator it(pth); it != end; it++){
-        pathentrs.push_back({it->path().filename().string(), is_directory(it->path()), is_symlink(it->path())});
+        pathentrs.push_back({it->path().filename().string(), is_directory(it->path()), is_symlink(it->path()),
+                root || status(it->path()).permissions() & perms::others_read});
     }
     
     sort(pathentrs.begin(), pathentrs.end(), comp_pentr);
@@ -289,7 +305,7 @@ void string_search(bool& lp, bool& refr, bool& appn){
 
                 if(subsp.substr(0, 5) == "goto "){
                     path gopath = path(subsp.substr(5));
-                    if(is_directory(gopath)){
+                    if(is_directory(gopath) && (root || status(gopath).permissions() & perms::others_read)){
                         pth = canonical(gopath);
                         lp = true;
                     }
