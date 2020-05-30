@@ -30,6 +30,7 @@ void tickdown();
 bool comp_pentr(dirent&, dirent&);
 int clamp(int, int, int);
 void string_search(bool&, bool&, bool&);
+inline bool can_read(const path&);
 
 int selec = 0;
 vector<dirent> pathentrs;
@@ -122,16 +123,17 @@ int main(int argc, char** args){
         //next dir
         case ']':
             for(int i = selec + 1; i < pathentrs.size(); i++){
-                if(pathentrs[i].isdir || pathentrs[i].islink){
+                if(pathentrs[i].isdir){
                     selec = i;
                     break;
                 }
             }
             refr = true;
             break;
+        //prev dir
         case '[':
             for(int i = selec - 1; i >= 0; i--){
-                if(pathentrs[i].isdir || pathentrs[i].islink){
+                if(pathentrs[i].isdir){
                     selec = i;
                     break;
                 }
@@ -141,16 +143,17 @@ int main(int argc, char** args){
         //next file
         case '.':
             for(int i = selec + 1; i < pathentrs.size(); i++){
-                if(!pathentrs[i].isdir && !pathentrs[i].islink){
+                if(!pathentrs[i].isdir){
                     selec = i;
                     break;
                 }
             }
             refr = true;
             break;
+        //prev file
         case ',':
             for(int i = selec - 1; i >= 0; i--){
-                if(!pathentrs[i].isdir && !pathentrs[i].islink){
+                if(!pathentrs[i].isdir){
                     selec = i;
                     break;
                 }
@@ -242,7 +245,7 @@ void list_dir(){
     directory_iterator end;
     for(directory_iterator it(pth); it != end; it++){
         pathentrs.push_back({it->path().filename().string(), is_directory(it->path()), is_symlink(it->path()),
-                root || status(it->path()).permissions() & perms::others_read});
+            can_read(it->path())});
     }
     
     sort(pathentrs.begin(), pathentrs.end(), comp_pentr);
@@ -305,7 +308,7 @@ void string_search(bool& lp, bool& refr, bool& appn){
 
                 if(subsp.substr(0, 5) == "goto "){
                     path gopath = path(subsp.substr(5));
-                    if(is_directory(gopath) && (root || status(gopath).permissions() & perms::others_read)){
+                    if(is_directory(gopath) && can_read(gopath)){
                         pth = canonical(gopath);
                         lp = true;
                     }
@@ -375,8 +378,7 @@ void string_search(bool& lp, bool& refr, bool& appn){
         printw(spinp.c_str());
 
         if(found > -1){
-            printw("\t|| ");
-            printw(pathentrs[found].path.c_str());
+            printw(("\t|| " + pathentrs[found].path + (pathentrs[found].isdir ? "/" : "")).c_str());
         }
         attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
 
@@ -384,4 +386,8 @@ void string_search(bool& lp, bool& refr, bool& appn){
 
         refresh();
     }
+}
+
+inline bool can_read(const path& pth){
+    return root || status(pth).permissions() & perms::others_read;
 }
