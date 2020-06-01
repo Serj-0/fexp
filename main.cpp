@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <map>
 #include "boost/filesystem.hpp"
 #include "ncurses.h"
 
@@ -26,17 +27,22 @@ struct dirent{
 void print_dir();
 void list_dir();
 void tickup();
+void tickup3();
 void tickdown();
+void tickdown3();
 bool comp_pentr(dirent&, dirent&);
 int clamp(int, int, int);
 void string_search(bool&, bool&, bool&);
 inline bool can_read(const path&);
+void exit_path(bool&, bool&);
+void enter_path(bool&, bool&);
 
 int selec = 0;
 vector<dirent> pathentrs;
 path pth;
 WINDOW* win;
 bool root;
+map<string, int> pathselnum;
 
 int main(int argc, char** args){
     root = !getuid();
@@ -76,6 +82,10 @@ int main(int argc, char** args){
             tickup();
             refr = true;
             break;
+        case 'W':
+            tickup3();
+            refr = true;
+            break;
         //down
         case 's':
             tickdown();
@@ -83,6 +93,10 @@ int main(int argc, char** args){
             break;
         case KEY_DOWN:
             tickdown();
+            refr = true;
+            break;
+        case 'S':
+            tickdown3();
             refr = true;
             break;
         //enter dir
@@ -93,20 +107,14 @@ int main(int argc, char** args){
             lp = refr = appn = pathentrs[selec].isdir;
             break;
         case KEY_RIGHT:
-            lp = refr = appn  = pathentrs[selec].isdir;
+            lp = refr = appn = pathentrs[selec].isdir;
             break;
         //exit dir
         case 'a':
-            if(pth != "/"){
-                pth = pth.parent_path();
-                lp = refr = true;
-            }
+            exit_path(lp, refr);
             break;
         case KEY_LEFT:
-            if(pth != "/"){
-                pth = pth.parent_path();
-                lp = refr = true;
-            }
+            exit_path(lp, refr);
             break;
         //next page
         case KEY_NPAGE:
@@ -168,16 +176,17 @@ int main(int argc, char** args){
         
         //enter directory
         if(appn && pathentrs.size() > 0){
-            if(pathentrs[selec].canread){
-                if(pathentrs[selec].islink){
-                    pth /= pathentrs[selec].path;
-                    pth = canonical(pth);
-                }else{
-                    pth /= pathentrs[selec].path;
-                }
-            }else{
-                lp = false;
-            }
+//            if(pathentrs[selec].canread){
+//                if(pathentrs[selec].islink){
+//                    pth /= pathentrs[selec].path;
+//                    pth = canonical(pth);
+//                }else{
+//                    pth /= pathentrs[selec].path;
+//                }
+//            }else{
+//                lp = false;
+//            }
+            enter_path(lp, refr);
         }
         if(lp) list_dir();
         if(refr) print_dir();
@@ -190,7 +199,7 @@ int main(int argc, char** args){
 }
 
 void print_dir(){
-    clear();
+    win->_curx = win->_cury = 0;
     
     string current = "|| " + pth.string() + " || " + to_string(selec + 1) + "\\" + to_string(pathentrs.size()) + " ||\n";
     printw(current.c_str());
@@ -213,6 +222,9 @@ void print_dir(){
             it < (ed >= pathentrs.size() ? pathentrs.end() : pathentrs.begin() + ed); it++){
         int pr = ((i == selec) << 1) + !it->canread;
         
+        printw("\n");
+        win->_cury--;
+        
         if(i == selec){
             string lk = "";
             if(it->islink){
@@ -232,7 +244,12 @@ void print_dir(){
         i++;
     }
     
+    while(i++ < ed){
+        printw("\n");
+    }
+    
     win->_cury = win->_maxy;
+    printw("\n");
     attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
     printw(selecpath.c_str());
     attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
@@ -250,7 +267,7 @@ void list_dir(){
     
     sort(pathentrs.begin(), pathentrs.end(), comp_pentr);
     
-    selec = 0;
+//    selec = 0;
 }
 
 void tickup(){
@@ -261,11 +278,25 @@ void tickup(){
     }
 }
 
+void tickup3(){
+    selec -= 3;
+    if(selec < 0){
+        selec = pathentrs.size() - 1 + selec;
+    }
+}
+
 void tickdown(){
     if(selec < pathentrs.size() - 1){
         selec++;
     }else{
         selec = 0;
+    }
+}
+
+void tickdown3(){
+    selec += 3;
+    if(selec > pathentrs.size() - 1){
+        selec = selec - (pathentrs.size() - 1);
     }
 }
 
@@ -309,14 +340,20 @@ void string_search(bool& lp, bool& refr, bool& appn){
                 if(subsp.substr(0, 5) == "goto "){
                     path gopath = path(subsp.substr(5));
                     if(is_directory(gopath) && can_read(gopath)){
+                        pathselnum[pth.filename().string()] = selec;
+                        
                         pth = canonical(gopath);
                         lp = true;
+                        
+                        selec = pathselnum[pth.filename().string()];
                     }
                 }
             //COMMAND LINE
             }else if(spinp[0] == '$'){
                 string inlcmd = "cd " + pth.string() + ";" + spinp.substr(1);
                 std::system(inlcmd.c_str());
+                clear();
+                refr = true;
             }else if(found > -1){
                 selec = found;
             }
@@ -390,4 +427,33 @@ void string_search(bool& lp, bool& refr, bool& appn){
 
 inline bool can_read(const path& pth){
     return root || status(pth).permissions() & perms::others_read;
+}
+
+void exit_path(bool& lp, bool& refr){
+    if(exists(pth.parent_path())){
+        pathselnum[pth.filename().string()] = selec;
+        
+        pth = pth.parent_path();
+        lp = refr = true;
+        
+        selec = pathselnum[pth.filename().string()];
+    }
+}
+
+void enter_path(bool& lp, bool& refr){
+    if(pathentrs[selec].canread){
+        pathselnum[pth.filename().string()] = selec;
+
+        if(pathentrs[selec].islink){
+            pth /= pathentrs[selec].path;
+            pth = canonical(pth);
+        }else{
+            pth /= pathentrs[selec].path;
+        }
+
+        selec = pathselnum[pth.filename().string()];
+    }else{
+        lp = false;
+        refr = false;
+    }
 }
