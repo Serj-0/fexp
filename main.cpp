@@ -314,6 +314,19 @@ int clamp(int value, int min, int max){
     }
 }
 
+path search_complete(string& spinp, int& found){
+    directory_iterator end;
+    for(directory_iterator it(pth); it != end; it++){
+        if(it->path().string().substr(0, spinp.size()) == spinp){
+            found = 1;
+            return it->path();
+        }
+    }
+    
+    return path("");
+}
+
+//TODO add goto directory completion
 void string_search(bool& lp, bool& refr, bool& appn){
     win->_curx = 0;
     win->_cury = win->_maxy;
@@ -321,7 +334,7 @@ void string_search(bool& lp, bool& refr, bool& appn){
     attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
     printw("||");
     attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
-    win->_curx = 2;
+//    win->_curx = 2;
 
     refresh();
 
@@ -330,6 +343,7 @@ void string_search(bool& lp, bool& refr, bool& appn){
     int i;
     int strpos = 0;
     int found = -1;
+    path fndpth = "";
 
     while(spc = getch()){
         switch(spc){
@@ -398,14 +412,15 @@ void string_search(bool& lp, bool& refr, bool& appn){
         }
 
         if(found == -1 && spinp.size() > 0){
-            i = 0;
-            for(vector<dirent>::iterator it = pathentrs.begin(); it < pathentrs.end(); it++){
-                if(it->path.substr(0, spinp.size()) == spinp){
-                    found = i;
-                    break;
-                }
-                i++;
-            }
+//            i = 0;
+//            for(vector<dirent>::iterator it = pathentrs.begin(); it < pathentrs.end(); it++){
+//                if(it->path.substr(0, spinp.size()) == spinp){
+//                    found = i;
+//                    break;
+//                }
+//                i++;
+//            }
+            search_complete(spinp, found);
         }
 
         win->_curx = 0;
@@ -414,8 +429,10 @@ void string_search(bool& lp, bool& refr, bool& appn){
         printw("||");
         printw(spinp.c_str());
 
-        if(found > -1){
-            printw(("\t|| " + pathentrs[found].path + (pathentrs[found].isdir ? "/" : "")).c_str());
+//        if(found > -1){
+        if(found){
+//            printw(("\t|| " + pathentrs[found].path + (pathentrs[found].isdir ? "/" : "")).c_str());
+            printw(("\t||" + fndpth.string() + (is_directory(fndpth) ? "/" : "")).c_str());
         }
         attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
 
