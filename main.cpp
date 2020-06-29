@@ -3,7 +3,9 @@
 #include <vector>
 #include <cmath>
 #include <map>
+#include <fstream>
 #include "boost/filesystem.hpp"
+#include "fexpmicro.h"
 #include "ncurses.h"
 
 #define PAIR_BLANK 0
@@ -32,20 +34,24 @@ void tickdown();
 void tickdown3();
 bool comp_pentr(dirent&, dirent&);
 int clamp(int, int, int);
-void string_search(bool&, bool&, bool&);
+void string_search();
 inline bool can_read(const path&);
 void exit_path(bool&, bool&);
 void enter_path(bool&, bool&);
 
 int selec = 0;
 vector<dirent> pathentrs;
+vector<path> srchentrs;
 path pth;
 WINDOW* win;
 bool root;
 map<string, int> pathselnum;
+std::ofstream dbglog;
 
 int main(int argc, char** args){
     root = !getuid();
+    
+    dbglog.open("fexp.log");
     
     pth = argc > 1 ? string(args[1]) : current_path();
     
@@ -170,7 +176,8 @@ int main(int argc, char** args){
             break;
         //string search
         case ' ':
-            string_search(lp, refr, appn);
+            string_search();
+            refr = true;
             break;
         }
         
@@ -195,6 +202,7 @@ int main(int argc, char** args){
     endo:;
     
     endwin();
+    dbglog.close();
     return 0;
 }
 
@@ -227,14 +235,20 @@ void print_dir(){
         
         if(i == selec){
             string lk = "";
+            bool dne = false;
             if(it->islink){
                 path lkpath = pth;
                 lkpath.append(it->path);
                 
-                lk = " -> " + canonical(lkpath).string();
+                if(exists(lkpath)){
+                    lk = " -> " + canonical(lkpath).string();
+                }else{
+                    dne = true;
+                }
             }
             
-            selecpath = it->path + lk;
+            selecpath = dne ? "[Does not exist]" : it->path + lk;
+//            selecpath = it->path + lk;
         }
         
         attron(COLOR_PAIR(pr));
@@ -266,8 +280,6 @@ void list_dir(){
     }
     
     sort(pathentrs.begin(), pathentrs.end(), comp_pentr);
-    
-//    selec = 0;
 }
 
 void tickup(){
@@ -304,6 +316,10 @@ bool comp_pentr(dirent& first, dirent& second){
     return first.path < second.path;
 }
 
+bool comp_path(path& first, path& second){
+    return first.filename().string() < second.filename().string();
+}
+
 int clamp(int value, int min, int max){
     if(value < min){
         return min;
@@ -314,161 +330,104 @@ int clamp(int value, int min, int max){
     }
 }
 
-path search_complete(string& spinp, int& found){
-    directory_iterator end;
-    for(directory_iterator it(pth); it != end; it++){
-        if(it->path().string().substr(0, spinp.size()) == spinp){
-            found = 1;
-            return it->path();
-        }
-    }
+//TODO fix this stupid search shit
+void string_search(){
+    string input;
+    int strpos = 0;
+    int c;
     
-    return path("");
-}
-
-//TODO add goto directory completion
-void string_search(bool& lp, bool& refr, bool& appn){
     win->_curx = 0;
     win->_cury = win->_maxy;
+
     printw("\n");
-    attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
-    printw("||");
-    attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
-//    win->_curx = 2;
-
+    printw(("||" + input + "||").c_str());
+    win->_curx = strpos + 2;
     refresh();
-
-    string spinp = "";
-    int spc = 0;
-    int i;
-    int strpos = 0;
-    int found = -1;
-    path fndpth = "";
-
-    while(spc = getch()){
-        switch(spc){
-        case '\n': //RETURN KEY
-            if(spinp[0] == '#'){
-               string subsp = spinp.substr(1);
-
-                if(subsp.substr(0, 5) == "goto "){
-                    path gopath = path(subsp.substr(5));
-                    if(is_directory(gopath) && can_read(gopath)){
-                        pathselnum[pth.filename().string()] = selec;
-                        
-                        pth = canonical(gopath);
-                        lp = true;
-                        
-                        selec = pathselnum[pth.filename().string()];
-                    }
-                }
-            //COMMAND LINE
-            }else if(spinp[0] == '$'){
-                string inlcmd = "cd " + pth.string() + ";" + spinp.substr(1);
-                std::system(inlcmd.c_str());
-                clear();
-                refr = true;
-            }else if(found > -1){
-                selec = found;
-            }
-
-            spc = -1;
-            break;
-        case '\\':
-            if(found > -1){
-                selec = found;
-                appn = true;
-                lp = true;
-            }
-            
-            spc = -1;
-            break;
-        case '`': //ESCAPE KEY
-            spc = -1;
-            break;
-        case 127: //BACKSPACE KEY
-            if(strpos > 0){
-                spinp.erase(strpos - 1, 1);
-                strpos--;
-            }
-            found = -1;
-            break;
+    
+    while(c = getch()){
+        switch(c){
+        case '`':
+            goto over;
         case KEY_LEFT:
-            strpos = clamp(--strpos, 0, spinp.size());
+            decrement(strpos);
             break;
         case KEY_RIGHT:
-            strpos = clamp(++strpos, 0, spinp.size());
+            increment(strpos, input);
+            break;
+        case KEY_BACKSPACE:
+            delchar(strpos, input);
+            break;
+        case '\b':
+            delchar(strpos, input);
+            break;
+        case 127:
+            delchar(strpos, input);
             break;
         default:
-            spinp.insert(strpos, 1, spc);
+            input.insert(strpos, 1, c);
             strpos++;
-            found = -1;
-            break;
         }
-
-        if(spc == -1){
-            refr = true;
-            break;
+        
+        //evaluate string
+//        string fullpath = input[0] == '/' ? input : pth.string() + input;
+        string fullpath;
+        dbglog << c << "\n";
+        if(input[0] == '/'){
+            fullpath = input;
+            dbglog << "first char /";
+        }else{
+            fullpath = pth.string() + input;
+            dbglog << "first char not /";
         }
-
-        if(found == -1 && spinp.size() > 0){
-//            i = 0;
-//            for(vector<dirent>::iterator it = pathentrs.begin(); it < pathentrs.end(); it++){
-//                if(it->path.substr(0, spinp.size()) == spinp){
-//                    found = i;
-//                    break;
-//                }
-//                i++;
-//            }
-            search_complete(spinp, found);
-        }
-
+        
+        //draw search line
         win->_curx = 0;
+        win->_cury = win->_maxy;
+        
         printw("\n");
-        attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
-        printw("||");
-        printw(spinp.c_str());
-
-//        if(found > -1){
-        if(found){
-//            printw(("\t|| " + pathentrs[found].path + (pathentrs[found].isdir ? "/" : "")).c_str());
-            printw(("\t||" + fndpth.string() + (is_directory(fndpth) ? "/" : "")).c_str());
-        }
-        attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
-
+        
+        attron(COLOR_PAIR(2));
+        win->_curx = win->_maxx - 13;
+        printw("'`' to cancel");
+        win->_curx = 0;
+        attroff(COLOR_PAIR(2));
+        
+        printw(("||" + input + "||" + fullpath).c_str());
         win->_curx = strpos + 2;
-
         refresh();
     }
+    over:;
 }
 
 inline bool can_read(const path& pth){
-    return root || status(pth).permissions() & perms::others_read;
+    return exists(pth) && (root || status(pth).permissions() & perms::others_read);
 }
 
 void exit_path(bool& lp, bool& refr){
     if(exists(pth.parent_path())){
-        pathselnum[pth.filename().string()] = selec;
+        pathselnum[pth.string()] = selec;
         
-        pth = pth.parent_path();
+        pth = pth.parent_path().parent_path();
+        if(pth != "/") pth += "/";
         lp = refr = true;
         
-        selec = pathselnum[pth.filename().string()];
+        selec = pathselnum[pth.string()];
     }
 }
 
 void enter_path(bool& lp, bool& refr){
     if(pathentrs[selec].canread){
-        pathselnum[pth.filename().string()] = selec;
+        pathselnum[pth.string()] = selec;
 
         if(pathentrs[selec].islink){
             pth /= pathentrs[selec].path;
             pth = canonical(pth);
+            pth += "/";
         }else{
-            pth /= pathentrs[selec].path;
+            pth /= (pathentrs[selec].path + "/");
         }
 
-        selec = pathselnum[pth.filename().string()];
+        selec = pathselnum[pth.string()];
     }else{
         lp = false;
         refr = false;
