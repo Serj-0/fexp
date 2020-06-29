@@ -19,25 +19,12 @@ using namespace boost::filesystem;
 
 const char* DEL_CHAR = "\b \b";
 
-struct dirent{
-    string path;
-    bool isdir;
-    bool islink;
-    bool canread;
-};
-
 void print_dir();
-void list_dir();
-void tickup();
-void tickup3();
-void tickdown();
-void tickdown3();
-bool comp_pentr(dirent&, dirent&);
-int clamp(int, int, int);
+void list_dir(path& pth, vector<dirent>& pathentrs);
 void string_search();
-inline bool can_read(const path&);
-void exit_path(bool&, bool&);
-void enter_path(bool&, bool&);
+inline bool can_read(const path& pth);
+void exit_path(bool& lp, bool& refr);
+void enter_path(bool& lp, bool& refr);
 
 int selec = 0;
 vector<dirent> pathentrs;
@@ -67,7 +54,7 @@ int main(int argc, char** args){
     
     int cs;
 
-    list_dir();
+    list_dir(pth, pathentrs);
     print_dir();
     
     while(cs = getch()){
@@ -81,28 +68,28 @@ int main(int argc, char** args){
             break;
         //up
         case 'w':
-            tickup();
+            tickup(selec, pathentrs);
             refr = true;
             break;
         case KEY_UP:
-            tickup();
+            tickup(selec, pathentrs);
             refr = true;
             break;
         case 'W':
-            tickup3();
+            tickup3(selec, pathentrs);
             refr = true;
             break;
         //down
         case 's':
-            tickdown();
+            tickdown(selec, pathentrs);
             refr = true;
             break;
         case KEY_DOWN:
-            tickdown();
+            tickdown(selec, pathentrs);
             refr = true;
             break;
         case 'S':
-            tickdown3();
+            tickdown3(selec, pathentrs);
             refr = true;
             break;
         //enter dir
@@ -181,6 +168,7 @@ int main(int argc, char** args){
             break;
         }
         
+        
         //enter directory
         if(appn && pathentrs.size() > 0){
 //            if(pathentrs[selec].canread){
@@ -195,7 +183,8 @@ int main(int argc, char** args){
 //            }
             enter_path(lp, refr);
         }
-        if(lp) list_dir();
+            
+        if(lp) list_dir(pth, pathentrs);
         if(refr) print_dir();
     }
     
@@ -203,15 +192,21 @@ int main(int argc, char** args){
     
     endwin();
     dbglog.close();
+    
     return 0;
 }
 
 void print_dir(){
     win->_curx = win->_cury = 0;
     
-    string current = "|| " + pth.string() + " || " + to_string(selec + 1) + "\\" + to_string(pathentrs.size()) + " ||\n";
+    string current = "|| " + pth.string() + " || " + to_string(selec + 1) + "\\" + to_string(pathentrs.size()) + " ||";
     printw(current.c_str());
-
+    
+    attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
+    win->_curx = win->_maxx - 35;
+    printw("'q' to quit | space to start search\n");
+    attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
+            
     int mxy = win->_maxy - 1;
     
     int m = 0;
@@ -271,66 +266,31 @@ void print_dir(){
     refresh();
 }
 
-void list_dir(){
+void list_dir(path& pth, vector<dirent>& pathentrs){
     pathentrs.clear();
     directory_iterator end;
     for(directory_iterator it(pth); it != end; it++){
-        pathentrs.push_back({it->path().filename().string(), is_directory(it->path()), is_symlink(it->path()),
-            can_read(it->path())});
+        bool isdir;
+        bool canread;
+        bool islink;
+        
+        try{
+            isdir = is_directory(it->path());
+            canread = can_read(it->path());
+            islink = is_symlink(it->path());
+        }catch(...){
+            isdir = false;
+            canread = false;
+            islink = false;
+        }
+
+        pathentrs.push_back({it->path().filename().string(), isdir, islink,
+            canread});
     }
     
     sort(pathentrs.begin(), pathentrs.end(), comp_pentr);
 }
 
-void tickup(){
-    if(selec > 0){
-        selec--;
-    }else{
-        selec = pathentrs.size() - 1;
-    }
-}
-
-void tickup3(){
-    selec -= 3;
-    if(selec < 0){
-        selec = pathentrs.size() - 1 + selec;
-    }
-}
-
-void tickdown(){
-    if(selec < pathentrs.size() - 1){
-        selec++;
-    }else{
-        selec = 0;
-    }
-}
-
-void tickdown3(){
-    selec += 3;
-    if(selec > pathentrs.size() - 1){
-        selec = selec - (pathentrs.size() - 1);
-    }
-}
-
-bool comp_pentr(dirent& first, dirent& second){
-    return first.path < second.path;
-}
-
-bool comp_path(path& first, path& second){
-    return first.filename().string() < second.filename().string();
-}
-
-int clamp(int value, int min, int max){
-    if(value < min){
-        return min;
-    }else if(value > max){
-        return max;
-    }else{
-        return value;
-    }
-}
-
-//TODO fix this stupid search shit
 void string_search(){
     string input;
     int strpos = 0;
@@ -369,30 +329,49 @@ void string_search(){
         }
         
         //evaluate string
-//        string fullpath = input[0] == '/' ? input : pth.string() + input;
-        string fullpath;
-        dbglog << c << "\n";
-        if(input[0] == '/'){
-            fullpath = input;
-            dbglog << "first char /";
-        }else{
-            fullpath = pth.string() + input;
-            dbglog << "first char not /";
+        string fullpath = input[0] == '/' ? input : pth.string() + input;
+        
+        string fname = "";
+        path srchpth = fullpath;
+        
+        int srchsel = -1;
+        vector<dirent> srchentrs;
+        
+        if(!fullpath.empty()){
+            if(fullpath[fullpath.size() - 1] == '/'){
+                int slashpos = fullpath.find_last_of('/', fullpath.size() - 2) + 1;
+                fname = fullpath.substr(slashpos, fullpath.size() - slashpos - 1);
+                if(srchpth.string() != "/") srchpth = srchpth.parent_path().parent_path();
+            }else{
+                fname = fullpath.substr(fullpath.find_last_of('/', fullpath.size() - 1) + 1);
+                srchpth = srchpth.parent_path();
+            }
+
+            list_dir(srchpth, srchentrs);
+
+            if(!fname.empty()){
+                for(int i = 0; i < srchentrs.size(); i++){
+                    if(srchentrs[i].path.substr(0, fname.size()) == fname){
+                        srchsel = i;
+                        break;
+                    }
+                }
+            }
         }
         
         //draw search line
         win->_curx = 0;
         win->_cury = win->_maxy;
-        
         printw("\n");
         
-        attron(COLOR_PAIR(2));
+        attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
         win->_curx = win->_maxx - 13;
         printw("'`' to cancel");
         win->_curx = 0;
-        attroff(COLOR_PAIR(2));
+        attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
         
-        printw(("||" + input + "||" + fullpath).c_str());
+        printw(("||" + input + "||" + srchpth.string()).c_str());
+        if(srchsel > -1) printw((" => " + srchentrs[srchsel].path).c_str());
         win->_curx = strpos + 2;
         refresh();
     }
@@ -422,10 +401,12 @@ void enter_path(bool& lp, bool& refr){
         if(pathentrs[selec].islink){
             pth /= pathentrs[selec].path;
             pth = canonical(pth);
-            pth += "/";
+            pth;
         }else{
-            pth /= (pathentrs[selec].path + "/");
+            pth /= (pathentrs[selec].path);
         }
+        
+        if(pth != "/") pth += "/";
 
         selec = pathselnum[pth.string()];
     }else{
