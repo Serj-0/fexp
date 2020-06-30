@@ -21,7 +21,7 @@ const char* DEL_CHAR = "\b \b";
 
 void print_dir();
 void list_dir(path& pth, vector<dirent>& pathentrs);
-void string_search();
+void string_search(bool& lp);
 inline bool can_read(const path& pth);
 void exit_path(bool& lp, bool& refr);
 void enter_path(bool& lp, bool& refr);
@@ -163,7 +163,7 @@ int main(int argc, char** args){
             break;
         //string search
         case ' ':
-            string_search();
+            string_search(lp);
             refr = true;
             break;
         }
@@ -197,6 +197,8 @@ int main(int argc, char** args){
 }
 
 void print_dir(){
+    win->_curx = win->_cury = 0;
+    printw("\n");
     win->_curx = win->_cury = 0;
     
     string current = "|| " + pth.string() + " || " + to_string(selec + 1) + "\\" + to_string(pathentrs.size()) + " ||";
@@ -291,7 +293,7 @@ void list_dir(path& pth, vector<dirent>& pathentrs){
     sort(pathentrs.begin(), pathentrs.end(), comp_pentr);
 }
 
-void string_search(){
+void string_search(bool& lp){
     string input;
     int strpos = 0;
     int c;
@@ -303,6 +305,11 @@ void string_search(){
     printw(("||" + input + "||").c_str());
     win->_curx = strpos + 2;
     refresh();
+    
+    vector<dirent> srchentrs;
+    path srchpth;
+    path fnd;
+    int srchsel = -1;
     
     while(c = getch()){
         switch(c){
@@ -323,6 +330,43 @@ void string_search(){
         case 127:
             delchar(strpos, input);
             break;
+        case '\t':
+            if(srchsel > -1){
+                input = srchpth.string();
+                if(input != "/") input.append("/");
+                input.append(srchentrs[srchsel].path);
+
+                if(is_directory(path(input))) input.append("/");
+                
+                srchentrs.clear();
+                strpos = input.size();
+            }
+            break;
+        case '\n':
+            if(srchsel > -1){
+                fnd = srchpth;
+
+                pathselnum[pth.string()] = selec;
+                    
+                if(srchentrs[srchsel].isdir){
+                    fnd /= srchentrs[srchsel].path;
+//                    fnd += "/";
+                    selec = pathselnum[fnd.string()];
+                    lp = true;
+                }else{
+                    pathentrs = srchentrs;
+                    selec = srchsel;
+                }
+
+                pth = canonical(fnd);
+                pth += "/";
+                goto over;
+            }else if(srchpth == "/"){
+                pth = "/";
+                lp = true;
+                goto over;
+            }
+            break;
         default:
             input.insert(strpos, 1, c);
             strpos++;
@@ -332,10 +376,8 @@ void string_search(){
         string fullpath = input[0] == '/' ? input : pth.string() + input;
         
         string fname = "";
-        path srchpth = fullpath;
-        
-        int srchsel = -1;
-        vector<dirent> srchentrs;
+        srchpth = fullpath;
+        srchsel = -1;
         
         if(!fullpath.empty()){
             if(fullpath[fullpath.size() - 1] == '/'){
@@ -346,20 +388,23 @@ void string_search(){
                 fname = fullpath.substr(fullpath.find_last_of('/', fullpath.size() - 1) + 1);
                 srchpth = srchpth.parent_path();
             }
+            
+            if(is_directory(srchpth)){
+                list_dir(srchpth, srchentrs);
 
-            list_dir(srchpth, srchentrs);
-
-            if(!fname.empty()){
-                for(int i = 0; i < srchentrs.size(); i++){
-                    if(srchentrs[i].path.substr(0, fname.size()) == fname){
-                        srchsel = i;
-                        break;
+                if(!fname.empty()){
+                    for(int i = 0; i < srchentrs.size(); i++){
+                        if(srchentrs[i].path.substr(0, fname.size()) == fname){
+                            srchsel = i;
+                            break;
+                        }
                     }
                 }
             }
         }
         
         //draw search line
+        dsl:;
         win->_curx = 0;
         win->_cury = win->_maxy;
         printw("\n");
@@ -370,8 +415,13 @@ void string_search(){
         win->_curx = 0;
         attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
         
-        printw(("||" + input + "||" + srchpth.string()).c_str());
+        printw(("||" + input).c_str());
+        
+        //TODO display more information about search find e.g. is link/directory
+        attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
+        printw(("||" + srchpth.string()).c_str());
         if(srchsel > -1) printw((" => " + srchentrs[srchsel].path).c_str());
+        attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
         win->_curx = strpos + 2;
         refresh();
     }
