@@ -74,5 +74,30 @@ int clamp(int value, int min, int max){
     }
 }
 
+void go_right(bool& lp, bool& refr, bool& appn, bool& jmp, vector<dirent>& pathentrs, int& selec){
+    if(pathentrs[selec].canread){
+        if(pathentrs[selec].isdir){
+            lp = refr = appn = true;
+        }else if(pathentrs[selec].islink){
+            lp = refr = jmp = true;
+        }
+    }
+}
+
+string canon_selec(path& pth, vector<dirent>& pathentrs, int& selec){
+    string lk;
+    
+    path lkpath = pth;
+    lkpath.append(pathentrs[selec].path);
+
+    if(exists(canonical(lkpath))){
+        lk = " -> " + canonical(lkpath).string();
+    }else{
+        lk = " [Link does not exist]";
+    }
+    
+    return lk;
+}
+
 #endif /* FEXPMICRO_H */
 

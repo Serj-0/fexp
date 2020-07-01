@@ -61,6 +61,7 @@ int main(int argc, char** args){
         bool refr = false;
         bool lp = false;
         bool appn = false;
+        bool jmp = false;
         
         switch(cs){
         case 'q':
@@ -94,13 +95,13 @@ int main(int argc, char** args){
             break;
         //enter dir
         case '\n':
-            lp = refr = appn = pathentrs[selec].isdir;
+            go_right(lp, refr, appn, jmp, pathentrs, selec);
             break;
         case 'd':
-            lp = refr = appn = pathentrs[selec].isdir;
+            go_right(lp, refr, appn, jmp, pathentrs, selec);
             break;
         case KEY_RIGHT:
-            lp = refr = appn = pathentrs[selec].isdir;
+            go_right(lp, refr, appn, jmp, pathentrs, selec);
             break;
         //exit dir
         case 'a':
@@ -170,21 +171,31 @@ int main(int argc, char** args){
         
         
         //enter directory
+        string jfile;
+        
         if(appn && pathentrs.size() > 0){
-//            if(pathentrs[selec].canread){
-//                if(pathentrs[selec].islink){
-//                    pth /= pathentrs[selec].path;
-//                    pth = canonical(pth);
-//                }else{
-//                    pth /= pathentrs[selec].path;
-//                }
-//            }else{
-//                lp = false;
-//            }
             enter_path(lp, refr);
-        }
+        }else if(jmp && pathentrs.size() > 0){
+            pathselnum[pth.string()] = selec;
             
+            pth /= pathentrs[selec].path;
+            pth = canonical(pth);
+            jfile = pth.filename().string();
+            pth = pth.parent_path();
+            pth += "/";
+        }
+        
         if(lp) list_dir(pth, pathentrs);
+        
+        if(jmp){
+            for(int i = 0; i < pathentrs.size(); i++){
+                if(pathentrs[i].path == jfile){
+                    selec = i;
+                    break;
+                }
+            }
+        }
+        
         if(refr) print_dir();
     }
     
@@ -343,6 +354,7 @@ void string_search(bool& lp){
             }
             break;
         case '\n':
+            /* * JUMPS * */
             if(srchsel > -1){
                 fnd = srchpth;
 
@@ -363,6 +375,26 @@ void string_search(bool& lp){
                 goto over;
             }else if(srchpth == "/"){
                 pth = "/";
+                lp = true;
+                goto over;
+            /* * COMMANDS * */
+            }else if(input.find_first_of('?') != input.npos){
+                int qpos = input.find_first_of('?');
+                string srchstr = input.substr(0, qpos);
+                string cmd = input.substr(qpos + 1);
+                
+                while(srchstr[srchstr.size() - 1] == ' ') srchstr.pop_back();
+                while(cmd[0] == ' ') cmd.erase(0, 1);
+                
+                if(srchstr.empty()) srchstr = pth.string() + pathentrs[selec].path;
+                
+                int dpos = 0;
+                while((dpos = cmd.find_first_of('$'), dpos != cmd.npos)){
+                    cmd.replace(dpos, 1, srchstr);
+                }
+                
+                std::system(("cd " + pth.string() + ";" + cmd).c_str());
+                clear();
                 lp = true;
                 goto over;
             }
@@ -417,10 +449,16 @@ void string_search(bool& lp){
         
         printw(("||" + input).c_str());
         
-        //TODO display more information about search find e.g. is link/directory
         attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
         printw(("||" + srchpth.string()).c_str());
-        if(srchsel > -1) printw((" => " + srchentrs[srchsel].path).c_str());
+        if(srchsel > -1){
+            printw((" : " + srchentrs[srchsel].path).c_str());
+            if(srchentrs[srchsel].islink){
+                printw(canon_selec(srchpth, srchentrs, srchsel).c_str());
+            }else if(srchentrs[srchsel].isdir){
+                printw("/");
+            }
+        }
         attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
         win->_curx = strpos + 2;
         refresh();
