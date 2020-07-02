@@ -4,6 +4,12 @@ Fexp is a terminal based file explorer.
 ## Installation
 Go to releases and download the [latest](https://github.com/Serj-0/fexp/releases/tag/v0.3.2) fexp. Relocate fexp to /usr/bin or another executable location.
 ## Usage
+All the files and directories in the current path are listed in alphabetical order. Files that you do not have read permissions for or that do not exist are highlighted in red. The current selection is highlighted in blue and written at the bottom of the terminal.
+
+When fexp is ran with no argument, the current directory is used as the entry point. Fexp can be ran with one argument defining a path of entry, e.g.
+> fexp /tmp
+
+
 ### Navigation `<- ^ v ->`
 Navigation is done with `w a s d` or the `Up Left Down Right` arrow keys.
 
