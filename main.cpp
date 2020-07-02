@@ -25,6 +25,8 @@ void string_search(bool& lp);
 inline bool can_read(const path& pth);
 void exit_path(bool& lp, bool& refr);
 void enter_path(bool& lp, bool& refr);
+void char_result();
+string get_string_input(string msg);
 
 int selec = 0;
 vector<dirent> pathentrs;
@@ -56,6 +58,8 @@ int main(int argc, char** args){
 
     list_dir(pth, pathentrs);
     print_dir();
+    
+    string strget;
     
     while(cs = getch()){
         bool refr = false;
@@ -167,8 +171,22 @@ int main(int argc, char** args){
             string_search(lp);
             refr = true;
             break;
+        //char testing
+        case KEY_F(9):
+            char_result();
+            refr = true;
+            break;
+        case 4:
+            strget = get_string_input("Make directory: ");
+            
+            //TODO make directory when string entered
+            
+            refr = true;
+            break;
+        case 6:
+            
+            break;
         }
-        
         
         //enter directory
         string jfile;
@@ -205,6 +223,68 @@ int main(int argc, char** args){
     dbglog.close();
     
     return 0;
+}
+
+string get_string_input(string msg){
+    string input;
+    int strpos = 0, c;
+    
+    win->_curx = 0;
+    win->_cury = win->_maxy;
+    printw("\n");
+    
+    printw(msg.c_str());
+    
+    refresh();
+    
+    while(c = getch()){
+        switch(c){
+        case '`':
+          goto over;
+        case KEY_LEFT:
+            if(strpos > 0) strpos--;
+            break;
+        case KEY_RIGHT:
+            if(strpos < input.size()) strpos++;
+            break;
+        case 127:
+            delchar(strpos, input);
+            break;
+        case KEY_BACKSPACE:
+            delchar(strpos, input);
+            break;
+        case '\b':
+            delchar(strpos, input);
+            break;
+        case KEY_ENTER:
+            return input;
+            break;
+        case '\n':
+            return input;
+            break;
+        default:
+            input.insert(strpos, 1, c);
+            strpos++;
+        }
+        
+        win->_cury = win->_maxy;
+        win->_curx = msg.size();
+        printw("\n");
+        
+        printw(input.c_str());
+        
+        attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
+        win->_curx = win->_maxx - 13;
+        printw("'`' to cancel");
+        win->_curx = 0;
+        attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
+        
+        win->_curx = msg.size() + strpos;
+        
+        refresh();
+    }
+    
+    over: return "";
 }
 
 void print_dir(){
@@ -304,6 +384,28 @@ void list_dir(path& pth, vector<dirent>& pathentrs){
     sort(pathentrs.begin(), pathentrs.end(), comp_pentr);
 }
 
+void char_result(){
+    int c = 0;
+    char cc;
+    const char* ccc = &cc;
+    
+    win->_cury = win->_maxy;
+    win->_curx = 0;
+    printw("\n");
+    win->_curx = 0;
+    
+    while(c = getch()){
+        if(c == '`') break;
+        
+        win->_curx = 0;
+        printw("\n");
+        win->_curx = 0;
+        cc = c;
+        printw(ccc);
+        printw((" : " + to_string(c)).c_str());
+    }
+}
+
 void string_search(bool& lp){
     string input;
     int strpos = 0;
@@ -393,6 +495,8 @@ void string_search(bool& lp){
                     cmd.replace(dpos, 1, srchstr);
                 }
                 
+                //TODO fix color instabillity when running external programs
+                clear();
                 std::system(("cd " + pth.string() + ";" + cmd).c_str());
                 clear();
                 lp = true;
