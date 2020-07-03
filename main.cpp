@@ -40,7 +40,7 @@ std::ofstream dbglog;
 int main(int argc, char** args){
     root = !getuid();
     
-    dbglog.open("fexp.log");
+//    dbglog.open("fexp.log");
     
     pth = argc > 1 ? string(args[1]) : current_path();
     
@@ -178,9 +178,12 @@ int main(int argc, char** args){
             break;
         case 4:
             strget = get_string_input("Make directory: ");
-            
             //TODO make directory when string entered
             
+//            permiss
+            if(!strget.empty()){
+                create_directories(path(strget));
+            }
             refr = true;
             break;
         case 6:
@@ -220,7 +223,7 @@ int main(int argc, char** args){
     endo:;
     
     endwin();
-    dbglog.close();
+//    dbglog.close();
     
     return 0;
 }
@@ -475,8 +478,12 @@ void string_search(bool& lp){
                 pth = canonical(fnd);
                 pth += "/";
                 goto over;
-            }else if(srchpth == "/"){
+            }else if(input == "/"){
                 pth = "/";
+                lp = true;
+                goto over;
+            }else if(input == "~"){
+                pth = getenv("HOME");
                 lp = true;
                 goto over;
             /* * COMMANDS * */
@@ -495,7 +502,6 @@ void string_search(bool& lp){
                     cmd.replace(dpos, 1, srchstr);
                 }
                 
-                //TODO fix color instabillity when running external programs
                 clear();
                 std::system(("cd " + pth.string() + ";" + cmd).c_str());
                 clear();
@@ -571,7 +577,7 @@ void string_search(bool& lp){
 }
 
 inline bool can_read(const path& pth){
-    return exists(pth) && (root || status(pth).permissions() & perms::others_read);
+    return exists(pth) && (root || status(pth).permissions() & perms::group_read);
 }
 
 void exit_path(bool& lp, bool& refr){
