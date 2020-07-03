@@ -32,6 +32,9 @@ int main(int argc, char** args){
     
 //    dbglog.open("fexp.log");
     
+    //TODO add slash to path end
+    //TODO add configuration
+    //TODO add option to hide hidden files
     pth = argc > 1 ? string(args[1]) : current_path();
     
     win = initscr();
@@ -537,7 +540,7 @@ void string_search(bool& lp){
                 clear();
                 std::system(("cd " + pth.string() + ";" + cmd).c_str());
                 clear();
-                lp = true;
+               lp = true;
                 goto over;
             }
             break;
