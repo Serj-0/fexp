@@ -41,6 +41,6 @@ If a direcory or file path is typed before `?` and a command, that path can be u
 > /home/me/Pictures ? ls $ > piclist.txt
 
 If no path is typed before `?` then `$` will translate to the currently select file or directory, e.g.
-> ? mv $/oldfile /home/me/documents
+> ? mv $/oldfile /home/me/Documents
 
 String command mode can be escaped by pressing `Backtick`.
