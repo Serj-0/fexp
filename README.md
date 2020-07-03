@@ -23,6 +23,11 @@ Navigation is done with `w a s d` or the `Up Left Down Right` arrow keys.
 - `,` or `.` to select previous or next file.
 - `[` or `]` to select previous or next directory.
 - `Page Up` or `Page Down` to jump one page up or down the file list.
+- `Home` to jump to your home directory.
+- `/` to jump to your root directory.
+- `^D` to create a new directory.
+- `^F` to create a new file.
+- `^R` or `Delete` to delete a file or directory (currently only empty directories).
 
 ### String Commands `? $`
 When typing in a string command, the closest matching file or directory name will be suggested and can be completed using `Tab`.
