@@ -1,6 +1,7 @@
 #ifndef FEXPMICRO_H
 #define FEXPMICRO_H
 #include "boost/filesystem.hpp"
+#include "ncurses.h"
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
@@ -12,7 +13,16 @@ struct dirent{
     bool canread;
 };
 
-void tickup(int& selec, vector<dirent>& pathentrs){
+int selec = 0;
+vector<dirent> pathentrs;
+vector<path> srchentrs;
+path pth;
+WINDOW* win;
+bool root;
+map<string, int> pathselnum;
+std::ofstream dbglog;
+
+void tickup(){
     if(selec > 0){
         selec--;
     }else{
@@ -20,14 +30,14 @@ void tickup(int& selec, vector<dirent>& pathentrs){
     }
 }
 
-void tickup3(int& selec, vector<dirent>& pathentrs){
+void tickup3(){
     selec -= 3;
     if(selec < 0){
         selec = pathentrs.size() - 1 + selec;
     }
 }
 
-void tickdown(int& selec, vector<dirent>& pathentrs){
+void tickdown(){
     if(selec < pathentrs.size() - 1){
         selec++;
     }else{
@@ -35,7 +45,7 @@ void tickdown(int& selec, vector<dirent>& pathentrs){
     }
 }
 
-void tickdown3(int& selec, vector<dirent>& pathentrs){
+void tickdown3(){
     selec += 3;
     if(selec > pathentrs.size() - 1){
         selec = selec - (pathentrs.size() - 1);
@@ -43,11 +53,11 @@ void tickdown3(int& selec, vector<dirent>& pathentrs){
 }
 
 void decrement(int& strpos){
-    strpos = strpos == 0 ? 0 : strpos - 1;
+    if(strpos > 0) strpos--;
 }
 
 void increment(int& strpos, string& input){
-    strpos = strpos == input.size() ? strpos : strpos + 1;
+    if(strpos < input.size()) strpos++;
 }
 
 void delchar(int& strpos, string& input){
@@ -74,7 +84,15 @@ int clamp(int value, int min, int max){
     }
 }
 
-void go_right(bool& lp, bool& refr, bool& appn, bool& jmp, vector<dirent>& pathentrs, int& selec){
+void save_selec(){
+    pathselnum[pth.string()] = selec;
+}
+
+void load_selec(){
+    selec = pathselnum[pth.string()];
+}
+
+void go_right(bool& lp, bool& refr, bool& appn, bool& jmp){
     if(pathentrs[selec].canread){
         if(pathentrs[selec].isdir){
             lp = refr = appn = true;
@@ -97,6 +115,30 @@ string canon_selec(path& pth, vector<dirent>& pathentrs, int& selec){
     }
     
     return lk;
+}
+
+void jump_to(path& to, bool slash, bool& refr, bool& lp){
+    pathselnum[pth.string()] = selec;
+    pth = to;
+    if(slash) pth += "/";
+    refr = lp = true;
+    selec = pathselnum[pth.string()];
+}
+
+void jump_to(string& to, bool slash, bool& refr, bool& lp){
+    pathselnum[pth.string()] = selec;
+    pth = to;
+    if(slash) pth += "/";
+    refr = lp = true;
+    selec = pathselnum[pth.string()];
+}
+
+void jump_to(const char* to, bool slash, bool& refr, bool& lp){
+    pathselnum[pth.string()] = selec;
+    pth = to;
+    if(slash) pth += "/";
+    refr = lp = true;
+    selec = pathselnum[pth.string()];
 }
 
 #endif /* FEXPMICRO_H */

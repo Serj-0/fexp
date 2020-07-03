@@ -4,9 +4,7 @@
 #include <cmath>
 #include <map>
 #include <fstream>
-#include "boost/filesystem.hpp"
 #include "fexpmicro.h"
-#include "ncurses.h"
 
 #define PAIR_BLANK 0
 #define PAIR_NOREAD 1
@@ -17,25 +15,17 @@ using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
 
-const char* DEL_CHAR = "\b \b";
+//const char* DEL_CHAR = "\b \b";
 
 void print_dir();
 void list_dir(path& pth, vector<dirent>& pathentrs);
 void string_search(bool& lp);
 inline bool can_read(const path& pth);
+inline bool can_write(const path& pth);
 void exit_path(bool& lp, bool& refr);
 void enter_path(bool& lp, bool& refr);
 void char_result();
 string get_string_input(string msg);
-
-int selec = 0;
-vector<dirent> pathentrs;
-vector<path> srchentrs;
-path pth;
-WINDOW* win;
-bool root;
-map<string, int> pathselnum;
-std::ofstream dbglog;
 
 int main(int argc, char** args){
     root = !getuid();
@@ -73,39 +63,43 @@ int main(int argc, char** args){
             break;
         //up
         case 'w':
-            tickup(selec, pathentrs);
+            goup:;
+            tickup();
             refr = true;
             break;
         case KEY_UP:
-            tickup(selec, pathentrs);
-            refr = true;
-            break;
+//            tickup();
+//            refr = true;
+//            break;
+            goto goup;
         case 'W':
-            tickup3(selec, pathentrs);
+            tickup3();
             refr = true;
             break;
         //down
         case 's':
-            tickdown(selec, pathentrs);
+            godn:;
+            tickdown();
             refr = true;
             break;
         case KEY_DOWN:
-            tickdown(selec, pathentrs);
-            refr = true;
-            break;
+//            tickdown();
+//            refr = true;
+//            break;
+            goto godn;
         case 'S':
-            tickdown3(selec, pathentrs);
+            tickdown3();
             refr = true;
             break;
         //enter dir
         case '\n':
-            go_right(lp, refr, appn, jmp, pathentrs, selec);
+            go_right(lp, refr, appn, jmp);
             break;
         case 'd':
-            go_right(lp, refr, appn, jmp, pathentrs, selec);
+            go_right(lp, refr, appn, jmp);
             break;
         case KEY_RIGHT:
-            go_right(lp, refr, appn, jmp, pathentrs, selec);
+            go_right(lp, refr, appn, jmp);
             break;
         //exit dir
         case 'a':
@@ -176,19 +170,54 @@ int main(int argc, char** args){
             char_result();
             refr = true;
             break;
-        case 4:
-            strget = get_string_input("Make directory: ");
-            //TODO make directory when string entered
+        case 4: //^D
+            strget = get_string_input("Create directory: ");
             
-//            permiss
             if(!strget.empty()){
-                create_directories(path(strget));
+                path mkpath = pth;
+                mkpath /= strget;
+                create_directory(mkpath);
+                lp = true;
             }
             refr = true;
             break;
-        case 6:
+        case 6: //^F
+            strget = get_string_input("Create file: ");
             
+            if(!strget.empty()){
+                path mkpath = pth;
+                mkpath /= strget;
+                filesystem::ofstream nfile(mkpath.string());
+                lp = true;
+            }
+            refr = true;
             break;
+        case KEY_HOME:
+            jump_to(getenv("HOME"), true, refr, lp);
+            break;
+        case '/':
+            jump_to("/", false, refr, lp);
+            break;
+        //TODO add delete file/directory command
+        case 18: //^R
+            delfile:;
+            strget = get_string_input("Delete file? [y/n] ");
+            
+            if(strget == "Y" || strget == "y"){
+                path rmfile = pth;
+                rmfile /= pathentrs[selec].path;
+                        
+                //TODO handle for directories that are not empty
+                if(can_write(rmfile)){
+                    remove(rmfile);
+                    lp = true;
+                }
+            }
+            refr = true;
+            break;
+        case KEY_DC:
+            goto delfile;
+        //TODO add open file command
         }
         
         //enter directory
@@ -197,13 +226,15 @@ int main(int argc, char** args){
         if(appn && pathentrs.size() > 0){
             enter_path(lp, refr);
         }else if(jmp && pathentrs.size() > 0){
-            pathselnum[pth.string()] = selec;
+            save_selec();
             
             pth /= pathentrs[selec].path;
             pth = canonical(pth);
             jfile = pth.filename().string();
             pth = pth.parent_path();
             pth += "/";
+            
+            load_selec();
         }
         
         if(lp) list_dir(pth, pathentrs);
@@ -222,6 +253,7 @@ int main(int argc, char** args){
     
     endo:;
     
+    clear();
     endwin();
 //    dbglog.close();
     
@@ -245,10 +277,10 @@ string get_string_input(string msg){
         case '`':
           goto over;
         case KEY_LEFT:
-            if(strpos > 0) strpos--;
+            decrement(strpos);
             break;
         case KEY_RIGHT:
-            if(strpos < input.size()) strpos++;
+            increment(strpos, input);
             break;
         case 127:
             delchar(strpos, input);
@@ -339,7 +371,6 @@ void print_dir(){
             }
             
             selecpath = dne ? "[Does not exist]" : it->path + lk;
-//            selecpath = it->path + lk;
         }
         
         attron(COLOR_PAIR(pr));
@@ -463,7 +494,7 @@ void string_search(bool& lp){
             if(srchsel > -1){
                 fnd = srchpth;
 
-                pathselnum[pth.string()] = selec;
+                save_selec();
                     
                 if(srchentrs[srchsel].isdir){
                     fnd /= srchentrs[srchsel].path;
@@ -484,6 +515,7 @@ void string_search(bool& lp){
                 goto over;
             }else if(input == "~"){
                 pth = getenv("HOME");
+                pth += "/";
                 lp = true;
                 goto over;
             /* * COMMANDS * */
@@ -580,33 +612,36 @@ inline bool can_read(const path& pth){
     return exists(pth) && (root || status(pth).permissions() & perms::group_read);
 }
 
+inline bool can_write(const path& pth){
+    return exists(pth) && (root || status(pth).permissions() & perms::group_write);
+}
+
 void exit_path(bool& lp, bool& refr){
     if(exists(pth.parent_path())){
-        pathselnum[pth.string()] = selec;
+        save_selec();
         
         pth = pth.parent_path().parent_path();
         if(pth != "/") pth += "/";
         lp = refr = true;
         
-        selec = pathselnum[pth.string()];
+        load_selec();
     }
 }
 
 void enter_path(bool& lp, bool& refr){
     if(pathentrs[selec].canread){
-        pathselnum[pth.string()] = selec;
+        save_selec();
 
         if(pathentrs[selec].islink){
             pth /= pathentrs[selec].path;
             pth = canonical(pth);
-            pth;
         }else{
             pth /= (pathentrs[selec].path);
         }
         
         if(pth != "/") pth += "/";
 
-        selec = pathselnum[pth.string()];
+        load_selec();
     }else{
         lp = false;
         refr = false;
