@@ -21,6 +21,7 @@ WINDOW* win;
 bool root;
 map<string, int> pathselnum;
 std::ofstream dbglog;
+string targselec = "";
 
 void tickup(){
     if(selec > 0){

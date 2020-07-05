@@ -4,6 +4,7 @@
 #include <cmath>
 #include <map>
 #include <fstream>
+#include "fexpconfig.h"
 #include "fexpmicro.h"
 
 #define PAIR_BLANK 0
@@ -30,12 +31,11 @@ string get_string_input(string msg);
 int main(int argc, char** args){
     root = !getuid();
     
-//    dbglog.open("fexp.log");
+    fexpconf::load_conf();
     
-    //TODO add slash to path end
-    //TODO add configuration
-    //TODO add option to hide hidden files
+    //TODO more configuration
     pth = argc > 1 ? string(args[1]) : current_path();
+    if(pth != "/") pth += "/";
     
     win = initscr();
     start_color();
@@ -173,7 +173,7 @@ int main(int argc, char** args){
             char_result();
             refr = true;
             break;
-        case 4: //^D
+        case 4: //^d
             strget = get_string_input("Create directory: ");
             
             if(!strget.empty()){
@@ -184,7 +184,7 @@ int main(int argc, char** args){
             }
             refr = true;
             break;
-        case 6: //^F
+        case 6: //^f
             strget = get_string_input("Create file: ");
             
             if(!strget.empty()){
@@ -201,8 +201,7 @@ int main(int argc, char** args){
         case '/':
             jump_to("/", false, refr, lp);
             break;
-        //TODO add delete file/directory command
-        case 18: //^R
+        case 18: //^r
             delfile:;
             strget = get_string_input("Delete file? [y/n] ");
             
@@ -221,6 +220,11 @@ int main(int argc, char** args){
         case KEY_DC:
             goto delfile;
         //TODO add open file command
+        case 263: //^h
+            targselec = pathentrs[selec].path;
+            fexpconf::show_hidden = !fexpconf::show_hidden;
+            lp = refr = true;
+            break;
         }
         
         //enter directory
@@ -240,7 +244,18 @@ int main(int argc, char** args){
             load_selec();
         }
         
-        if(lp) list_dir(pth, pathentrs);
+        if(lp){
+            list_dir(pth, pathentrs);
+            if(!targselec.empty()){
+                for(int i = 0; i < pathentrs.size() - 1; i++){
+                    if(pathentrs[i].path == targselec){
+                        selec = i;
+                        targselec.clear();
+                        break;
+                    }
+                }
+            }
+        }
         
         if(jmp){
             for(int i = 0; i < pathentrs.size(); i++){
@@ -258,7 +273,6 @@ int main(int argc, char** args){
     
     clear();
     endwin();
-//    dbglog.close();
     
     return 0;
 }
@@ -271,7 +285,9 @@ string get_string_input(string msg){
     win->_cury = win->_maxy;
     printw("\n");
     
+    attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
     printw(msg.c_str());
+    attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
     
     refresh();
     
@@ -399,7 +415,11 @@ void print_dir(){
 void list_dir(path& pth, vector<dirent>& pathentrs){
     pathentrs.clear();
     directory_iterator end;
+    win->_curx = 0;
+    win->_cury = 0;
     for(directory_iterator it(pth); it != end; it++){
+        if(!fexpconf::show_hidden && it->path().filename().string()[0] == '.') continue;
+        
         bool isdir;
         bool canread;
         bool islink;
@@ -538,6 +558,7 @@ void string_search(bool& lp){
                 }
                 
                 clear();
+                //TODO replace with fork
                 std::system(("cd " + pth.string() + ";" + cmd).c_str());
                 clear();
                lp = true;
