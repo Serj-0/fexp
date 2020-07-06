@@ -2,6 +2,7 @@
 #define FEXPCONFIG_H
 #include <fstream>
 #include <sstream>
+#include <boost/filesystem/operations.hpp>
 
 namespace fexpconf{
     using std::string;
@@ -43,7 +44,6 @@ namespace fexpconf{
         *static_cast<string*>(valptr) = trim.substr(1, trim.size() - 2);
     }
     
-    //TODO implement rest of config types
     void (*optionloader[4])(void*, string&) = {
         loadconf_bool,
         loadconf_int,
@@ -53,22 +53,27 @@ namespace fexpconf{
     
     /* * * * */
     
+    string conf_version;
     bool show_hidden = true;
-    int dummy_int;
-    float dummy_float;
-    string dummy_string;
+    bool prompt_delall = true;
     
-    //TODO load config option map from file? maybe
     const int confoptcnt = 4;
     confdesc confoptions[confoptcnt] = {
+        {"[Config Version]", CONFTYPE_STRING, &conf_version},
         {"[Show Hidden Files]", CONFTYPE_BOOL, &show_hidden},
-        {"[Dummy Int Option]", CONFTYPE_INT, &dummy_int},
-        {"[Dummy Float Option]", CONFTYPE_FLOAT, &dummy_float},
-        {"[Dummy String Option]", CONFTYPE_STRING, &dummy_string}
+        {"[Prompt Recursive Deletion]", CONFTYPE_BOOL, &prompt_delall}
     };
     
-    void init_conf(){
+    //TODO create config files if they dont exist
+    void validate_conf(){
+        using namespace boost::filesystem;
+        if(!exists("/usr/share/fexp")){
+            create_directories("/usr/share/fexp");
+        }
         
+        if(!exists("/usr/share/fexp/fexp.conf")){
+            //TODO link libcurl and binds
+        }
     }
     
     void load_conf(){

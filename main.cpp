@@ -27,13 +27,14 @@ void exit_path(bool& lp, bool& refr);
 void enter_path(bool& lp, bool& refr);
 void char_result();
 string get_string_input(string msg);
+void print_info();//TODO add file/dir information section
 
 int main(int argc, char** args){
     root = !getuid();
     
+    //TODO more configuration options
     fexpconf::load_conf();
     
-    //TODO more configuration
     pth = argc > 1 ? string(args[1]) : current_path();
     if(pth != "/") pth += "/";
     
@@ -203,28 +204,40 @@ int main(int argc, char** args){
             break;
         case 18: //^r
             delfile:;
-            strget = get_string_input("Delete file? [y/n] ");
+            strget = get_string_input("Delete? [y/n] ");
             
             if(strget == "Y" || strget == "y"){
                 path rmfile = pth;
                 rmfile /= pathentrs[selec].path;
                         
-                //TODO handle for directories that are not empty
                 if(can_write(rmfile)){
-                    remove(rmfile);
-                    lp = true;
+                    if(!filesystem::is_empty(rmfile)){
+                        if(fexpconf::prompt_delall){
+                            strget = get_string_input("Directory is not empty. Delete anyway? [y/n] ");
+                        }else{
+                            strget = "y";
+                        }
+                        
+                        if(strget == "Y" || strget == "y"){
+                            remove_all(rmfile);
+                            lp = true;
+                        }
+                    }else{
+                        remove(rmfile);
+                        lp = true;
+                    }
                 }
             }
             refr = true;
             break;
         case KEY_DC:
             goto delfile;
-        //TODO add open file command
         case 263: //^h
             targselec = pathentrs[selec].path;
             fexpconf::show_hidden = !fexpconf::show_hidden;
             lp = refr = true;
             break;
+        //TODO add open file command
         }
         
         //enter directory
@@ -560,8 +573,9 @@ void string_search(bool& lp){
                 clear();
                 //TODO replace with fork
                 std::system(("cd " + pth.string() + ";" + cmd).c_str());
+                
                 clear();
-               lp = true;
+                lp = true;
                 goto over;
             }
             break;

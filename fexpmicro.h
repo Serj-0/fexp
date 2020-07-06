@@ -6,6 +6,8 @@ using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
 
+#define FEXP_VERSION 0.4
+
 struct dirent{
     string path;
     bool isdir;
