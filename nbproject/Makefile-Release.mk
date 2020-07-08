@@ -52,7 +52,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L../../local/lib/boost -lncurses -lboost_filesystem
+LDLIBSOPTIONS=-L../../local/lib/boost -L../../lib/x86_64-linux-gnu -lncurses -lboost_filesystem -lcurl
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}

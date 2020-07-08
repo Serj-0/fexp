@@ -83,10 +83,13 @@
         <linkerTool>
           <linkerAddLib>
             <pElem>../../local/lib/boost</pElem>
+            <pElem>../../lib/x86_64-linux-gnu</pElem>
           </linkerAddLib>
+          <linkerDepDynSerchKind>3</linkerDepDynSerchKind>
           <linkerLibItems>
             <linkerLibLibItem>ncurses</linkerLibLibItem>
             <linkerLibLibItem>boost_filesystem</linkerLibLibItem>
+            <linkerLibLibItem>curl</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

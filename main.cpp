@@ -32,7 +32,7 @@ void print_info();//TODO add file/dir information section
 int main(int argc, char** args){
     root = !getuid();
     
-    //TODO more configuration options
+    //fexpconf::validate_conf();
     fexpconf::load_conf();
     
     pth = argc > 1 ? string(args[1]) : current_path();
