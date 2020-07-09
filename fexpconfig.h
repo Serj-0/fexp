@@ -79,7 +79,6 @@ size_t cfg_curl_write(char* ptr, size_t size, size_t nmemb, void* data){
     return size * nmemb;
 }
 
-//TODO create config files if they dont exist
 void validate_conf(){
     CURL* curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_URL, FEXP_CONF_URL);
@@ -90,10 +89,11 @@ void validate_conf(){
     istringstream cfgstrst(cfg_pulled);
     string cfg_pull_ver;
     
+    cfgstrst.ignore(16);
     cfgstrst >> cfg_pull_ver;
     
-    //TODO strip version from cfg pull ver
-
+//    cout << cfg_pull_ver << "\n";
+    
     //create config location
     if(!exists("/usr/share/fexp")) create_directories("/usr/share/fexp");
 
@@ -105,11 +105,23 @@ void validate_conf(){
     }else{
         ifstream cfile(FEXP_CONF_PATH);
 
+        string confver;
+        cfile.ignore(16);
+        cfile >> confver;
         
-
+//        cout << "onfile ver: " << confver << "\n";
+        
+        dlconf = confver != cfg_pull_ver;
+        
         cfile.close();
     }
 
+    if(dlconf){
+//        cout << "Downloading updated config...\n";
+        ofstream confdlst(FEXP_CONF_PATH);
+        confdlst << cfg_pulled;
+        confdlst.close();
+    }
 }
 
 void load_conf(){

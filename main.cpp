@@ -4,6 +4,7 @@
 #include <cmath>
 #include <map>
 #include <fstream>
+#include "sys/stat.h"
 #include "fexpconfig.h"
 #include "fexpmicro.h"
 
@@ -27,12 +28,12 @@ void exit_path(bool& lp, bool& refr);
 void enter_path(bool& lp, bool& refr);
 void char_result();
 string get_string_input(string msg);
-void print_info();//TODO add file/dir information section
+void print_info();
 
 int main(int argc, char** args){
     root = !getuid();
     
-    //fexpconf::validate_conf();
+    fexpconf::validate_conf();
     fexpconf::load_conf();
     
     pth = argc > 1 ? string(args[1]) : current_path();
@@ -416,13 +417,44 @@ void print_dir(){
         printw("\n");
     }
     
+    print_info();
+    
+    //bot line
     win->_cury = win->_maxy;
+    win->_curx = 0;
+    
     printw("\n");
     attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
     printw(selecpath.c_str());
     attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
-   
+    
     refresh();
+}
+
+//TODO finish file/dir information section
+void print_info(){
+    int halfw = win->_maxx / 2;
+    
+    struct stat fstats;
+    stat((pth.string() + "/" + pathentrs[selec].path).c_str(), &fstats);
+    
+    bool islnk = S_ISLNK(fstats.st_mode);
+    
+    
+    win->_cury = 1;
+    win->_curx = halfw;
+    
+    printw(((string)"# Regular File: " + (string)"?").c_str());
+    
+    win->_cury = 2;
+    win->_curx = halfw;
+    
+    printw(("# File Size: " + to_string(fstats.st_size) + " bytes").c_str());
+    
+    win->_cury = 3;
+    win->_curx = halfw;
+    
+    printw(("# Link: " + to_string(islnk)).c_str());
 }
 
 void list_dir(path& pth, vector<dirent>& pathentrs){
