@@ -62,6 +62,7 @@ int main(int argc, char** args){
         bool appn = false;
         bool jmp = false;
         
+        /* * KEYS * */
         switch(cs){
         case 'q':
             goto endo;
@@ -238,6 +239,15 @@ int main(int argc, char** args){
             fexpconf::show_hidden = !fexpconf::show_hidden;
             lp = refr = true;
             break;
+        //TODO add go back command
+        //go back
+//        case 0407:
+//            goback:;
+//            pop_path;
+//            lp = refr = true;
+//            break;
+//        case '\b':
+//            goto goback;
         //TODO add open file command
         }
         
@@ -245,9 +255,11 @@ int main(int argc, char** args){
         string jfile;
         
         if(appn && pathentrs.size() > 0){
+            push_path();
             enter_path(lp, refr);
         }else if(jmp && pathentrs.size() > 0){
             save_selec();
+            push_path();
             
             pth /= pathentrs[selec].path;
             pth = canonical(pth);
@@ -434,27 +446,29 @@ void print_dir(){
 //TODO finish file/dir information section
 void print_info(){
     int halfw = win->_maxx / 2;
+    dirent& selp = pathentrs[selec];
+    string y = "Yes";
+    string n = "No";
     
-    struct stat fstats;
-    stat((pth.string() + "/" + pathentrs[selec].path).c_str(), &fstats);
-    
-    bool islnk = S_ISLNK(fstats.st_mode);
-    
-    
+    win->_curx = halfw;
     win->_cury = 1;
+    printw(("# File Path: " + selp.rpath.string()).c_str());
+    
     win->_curx = halfw;
-    
-    printw(((string)"# Regular File: " + (string)"?").c_str());
-    
     win->_cury = 2;
+    printw(("# Normal File: " + (selp.isnorm ? y : n)).c_str());
+    
     win->_curx = halfw;
-    
-    printw(("# File Size: " + to_string(fstats.st_size) + " bytes").c_str());
-    
     win->_cury = 3;
-    win->_curx = halfw;
+    printw(("# Directory: " + (selp.isdir ? y : n)).c_str());
     
-    printw(("# Link: " + to_string(islnk)).c_str());
+    win->_curx = halfw;
+    win->_cury = 4;
+    printw(("# Symlink: " + (selp.islink ? y : n)).c_str());
+    
+    win->_curx = halfw;
+    win->_cury = 5;
+    printw(("# Last Modified: " + to_string(selp.lastmodtime)).c_str());
 }
 
 void list_dir(path& pth, vector<dirent>& pathentrs){
@@ -465,27 +479,34 @@ void list_dir(path& pth, vector<dirent>& pathentrs){
     for(directory_iterator it(pth); it != end; it++){
         if(!fexpconf::show_hidden && it->path().filename().string()[0] == '.') continue;
         
+        bool isnorm;
         bool isdir;
-        bool canread;
         bool islink;
+        bool canread;
+        long modtime;
         
         try{
+            isnorm = is_regular(it->path());
             isdir = is_directory(it->path());
-            canread = can_read(it->path());
             islink = is_symlink(it->path());
+            canread = can_read(it->path());
+            modtime = last_write_time(it->path());
         }catch(...){
+            isnorm = false;
             isdir = false;
-            canread = false;
             islink = false;
+            canread = false;
+            modtime = 0;
         }
 
-        pathentrs.push_back({it->path().filename().string(), isdir, islink,
-            canread});
+        pathentrs.push_back({it->path(), it->path().filename().string(), isnorm, isdir, islink,
+            canread, modtime});
     }
     
     sort(pathentrs.begin(), pathentrs.end(), comp_pentr);
 }
 
+//TODO fix char result
 void char_result(){
     int c = 0;
     char cc;
@@ -574,14 +595,17 @@ void string_search(bool& lp){
                     selec = srchsel;
                 }
 
+                push_path();
                 pth = canonical(fnd);
                 pth += "/";
                 goto over;
             }else if(input == "/"){
+                push_path();
                 pth = "/";
                 lp = true;
                 goto over;
             }else if(input == "~"){
+                push_path();
                 pth = getenv("HOME");
                 pth += "/";
                 lp = true;

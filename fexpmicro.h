@@ -1,5 +1,6 @@
 #ifndef FEXPMICRO_H
 #define FEXPMICRO_H
+#include <vector>
 #include "boost/filesystem.hpp"
 #include "ncurses.h"
 using namespace std;
@@ -9,11 +10,14 @@ using namespace boost::filesystem;
 #define FEXP_VERSION 0.4
 
 struct dirent{
+    typedef boost::filesystem::path boostpath;
+    boostpath rpath;
     string path;
-    bool isdir;
-    bool islink;
-    bool canread;
+    bool isnorm, isdir, islink, canread;
+    long lastmodtime;
 };
+
+vector<path> path_stack;
 
 int selec = 0;
 vector<dirent> pathentrs;
@@ -142,6 +146,18 @@ void jump_to(const char* to, bool slash, bool& refr, bool& lp){
     if(slash) pth += "/";
     refr = lp = true;
     selec = pathselnum[pth.string()];
+}
+
+void push_path(){
+    path_stack.push_back(pth);
+//    if(path_stack.size() > fexpconf::path_stack_max){
+}
+
+void pop_path(){
+    if(!path_stack.empty()){
+        pth = *path_stack.end();
+        path_stack.erase(path_stack.end());
+    }
 }
 
 #endif /* FEXPMICRO_H */
