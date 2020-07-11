@@ -28,6 +28,71 @@ bool root;
 map<string, int> pathselnum;
 std::ofstream dbglog;
 string targselec = "";
+string jfile = "";
+
+bool refr = false;
+bool lp = false;
+bool appn = false;
+bool jmp = false;
+
+void save_selec(){
+    pathselnum[pth.string()] = selec;
+}
+
+void load_selec(){
+    selec = pathselnum[pth.string()];
+}
+
+void push_path(){
+    path_stack.push_back(pth);
+//    if(path_stack.size() > fexpconf::path_stack_max){
+}
+
+void pop_path(){
+    if(!path_stack.empty()){
+        pathselnum[pth.string()] = selec;
+        
+        pth = *(path_stack.end() - 1);
+//        cout << pth.string();
+        path_stack.erase((path_stack.end() - 1));
+        
+        selec = pathselnum[pth.string()];
+        
+        lp = true;
+        refr = true;
+    }
+}
+
+void set_working_directory(path npth, string appn, bool slashappn, bool canon, bool parent, bool dolp, string findafter = ""){
+    save_selec();
+    push_path();
+    
+    if(!appn.empty()){
+        if(slashappn && pth != "/"){
+            npth /= appn;
+        }else{
+            npth += appn;
+        }
+    }
+    
+    pth = npth;
+    
+    if(canon) pth = canonical(pth);
+    if(parent){
+        pth = pth.parent_path();
+    }
+
+    if(pth != "/") pth += "/";
+    
+    if(findafter.empty()){
+        load_selec();
+    }else{
+        targselec = findafter;
+    }
+    
+    lp = dolp;
+    refr = true;
+}
 
 void tickup(){
     if(selec > 0){
@@ -91,15 +156,7 @@ int clamp(int value, int min, int max){
     }
 }
 
-void save_selec(){
-    pathselnum[pth.string()] = selec;
-}
-
-void load_selec(){
-    selec = pathselnum[pth.string()];
-}
-
-void go_right(bool& lp, bool& refr, bool& appn, bool& jmp){
+void go_right(){
     if(pathentrs[selec].canread){
         if(pathentrs[selec].isdir){
             lp = refr = appn = true;
@@ -107,6 +164,20 @@ void go_right(bool& lp, bool& refr, bool& appn, bool& jmp){
             lp = refr = jmp = true;
         }
     }
+}
+
+void exit_path(){
+    if(exists(pth.parent_path())){
+        set_working_directory(pth.parent_path().parent_path(), "", false, false, false, true);
+    }
+}
+
+inline bool can_read(const path& pth){
+    return exists(pth) && (root || status(pth).permissions() & perms::group_read);
+}
+
+inline bool can_write(const path& pth){
+    return exists(pth) && (root || status(pth).permissions() & perms::group_write);
 }
 
 string canon_selec(path& pth, vector<dirent>& pathentrs, int& selec){
@@ -124,41 +195,29 @@ string canon_selec(path& pth, vector<dirent>& pathentrs, int& selec){
     return lk;
 }
 
-void jump_to(path& to, bool slash, bool& refr, bool& lp){
-    pathselnum[pth.string()] = selec;
-    pth = to;
-    if(slash) pth += "/";
-    refr = lp = true;
-    selec = pathselnum[pth.string()];
-}
-
-void jump_to(string& to, bool slash, bool& refr, bool& lp){
-    pathselnum[pth.string()] = selec;
-    pth = to;
-    if(slash) pth += "/";
-    refr = lp = true;
-    selec = pathselnum[pth.string()];
-}
-
-void jump_to(const char* to, bool slash, bool& refr, bool& lp){
-    pathselnum[pth.string()] = selec;
-    pth = to;
-    if(slash) pth += "/";
-    refr = lp = true;
-    selec = pathselnum[pth.string()];
-}
-
-void push_path(){
-    path_stack.push_back(pth);
-//    if(path_stack.size() > fexpconf::path_stack_max){
-}
-
-void pop_path(){
-    if(!path_stack.empty()){
-        pth = *path_stack.end();
-        path_stack.erase(path_stack.end());
-    }
-}
+//void jump_to(path& to, bool slash, bool& refr, bool& lp){
+//    pathselnum[pth.string()] = selec;
+//    pth = to;
+//    if(slash) pth += "/";
+//    refr = lp = true;
+//    selec = pathselnum[pth.string()];
+//}
+//
+//void jump_to(string& to, bool slash, bool& refr, bool& lp){
+//    pathselnum[pth.string()] = selec;
+//    pth = to;
+//    if(slash) pth += "/";
+//    refr = lp = true;
+//    selec = pathselnum[pth.string()];
+//}
+//
+//void jump_to(const char* to, bool slash, bool& refr, bool& lp){
+//    pathselnum[pth.string()] = selec;
+//    pth = to;
+//    if(slash) pth += "/";
+//    refr = lp = true;
+//    selec = pathselnum[pth.string()];
+//}
 
 #endif /* FEXPMICRO_H */
 
