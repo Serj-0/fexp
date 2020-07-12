@@ -362,6 +362,12 @@ void print_dir(){
     win->_curx = win->_cury = 0;
 
     string current = "|| " + pth.string() + " || " + to_string(selec + 1) + "\\" + to_string(pathentrs.size()) + " ||";
+    
+    if(current.size() >= win->_maxx - 35){
+        current = current.substr(current.size() - (win->_maxx - 38));
+        current = "..." + current;
+    }
+    
     printw(current.c_str());
 
     attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
@@ -441,7 +447,10 @@ void print_info(){
 
     win->_curx = halfw;
     win->_cury = 1;
-    printw(("# File Path: " + selp.rpath.string()).c_str());
+    
+    //TODO truncate file path string if it breaches the bound of its line
+    string fullpath = "# File Path: " + selp.rpath.string();
+    printw(fullpath.c_str());
 
     win->_curx = halfw;
     win->_cury = 2;

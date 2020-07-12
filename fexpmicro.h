@@ -53,13 +53,12 @@ void increment(int& strpos, string& input){
     if(strpos < input.size()) strpos++;
 }
 
-//TODO add max path stack size to config options
 void push_path(){
     if(pathhisti < path_stack.size() - 1){
         path_stack.erase(path_stack.begin() + pathhisti, path_stack.end());
     }
     
-    if(pathhisti >= fexpconf::hist_max_size){
+    if(pathhisti >= fexpconf::hist_max_size - 1){
         path_stack.erase(path_stack.begin());
     }else{
         pathhisti++;
@@ -115,6 +114,8 @@ void hist_go_forward(){
 }
 
 void tickup(){
+    if(pathentrs.empty()) return;
+    
     if(selec > 0){
         selec--;
     }else{
@@ -123,6 +124,8 @@ void tickup(){
 }
 
 void tickup3(){
+    if(pathentrs.empty()) return;
+    
     selec -= 3;
     if(selec < 0){
         selec = pathentrs.size() - 1 + selec;
@@ -130,6 +133,8 @@ void tickup3(){
 }
 
 void tickdown(){
+    if(pathentrs.empty()) return;
+    
     if(selec < pathentrs.size() - 1){
         selec++;
     }else{
@@ -138,6 +143,8 @@ void tickdown(){
 }
 
 void tickdown3(){
+    if(pathentrs.empty()) return;
+    
     selec += 3;
     if(selec > pathentrs.size() - 1){
         selec = selec - (pathentrs.size() - 1);
