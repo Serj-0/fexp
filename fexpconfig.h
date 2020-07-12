@@ -64,13 +64,15 @@ void (*optionloader[4])(void*, string&) = {
 string conf_version;
 bool show_hidden = true;
 bool prompt_delall = true;
+int hist_max_size;
 
 //TODO more configuration options
-const int confoptcnt = 3;
+const int confoptcnt = 4;
 confdesc confoptions[confoptcnt] = {
     {"[Config Version]", CONFTYPE_STRING, &conf_version},
     {"[Show Hidden Files]", CONFTYPE_BOOL, &show_hidden},
-    {"[Prompt Recursive Deletion]", CONFTYPE_BOOL, &prompt_delall}
+    {"[Prompt Recursive Deletion]", CONFTYPE_BOOL, &prompt_delall},
+    {"[Max History Size]", CONFTYPE_INT, &hist_max_size}
 };
 
 string cfg_pulled;

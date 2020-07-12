@@ -3,6 +3,7 @@
 #include <vector>
 #include "boost/filesystem.hpp"
 #include "ncurses.h"
+#include "fexpconfig.h"
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
@@ -18,6 +19,7 @@ struct dirent{
 };
 
 vector<path> path_stack;
+int pathhisti = -1;
 
 int selec = 0;
 vector<dirent> pathentrs;
@@ -43,29 +45,31 @@ void load_selec(){
     selec = pathselnum[pth.string()];
 }
 
+void decrement(int& strpos){
+    if(strpos > 0) strpos--;
+}
+
+void increment(int& strpos, string& input){
+    if(strpos < input.size()) strpos++;
+}
+
+//TODO add max path stack size to config options
 void push_path(){
-    path_stack.push_back(pth);
-//    if(path_stack.size() > fexpconf::path_stack_max){
-}
-
-void pop_path(){
-    if(!path_stack.empty()){
-        pathselnum[pth.string()] = selec;
-        
-        pth = *(path_stack.end() - 1);
-//        cout << pth.string();
-        path_stack.erase((path_stack.end() - 1));
-        
-        selec = pathselnum[pth.string()];
-        
-        lp = true;
-        refr = true;
+    if(pathhisti < path_stack.size() - 1){
+        path_stack.erase(path_stack.begin() + pathhisti, path_stack.end());
     }
+    
+    if(pathhisti >= fexpconf::hist_max_size){
+        path_stack.erase(path_stack.begin());
+    }else{
+        pathhisti++;
+    }
+
+    path_stack.push_back(pth);
 }
 
-void set_working_directory(path npth, string appn, bool slashappn, bool canon, bool parent, bool dolp, string findafter = ""){
+void set_working_directory(path npth, string appn, bool slashappn, bool canon, bool parent, bool dolp, bool push, string findafter = ""){
     save_selec();
-    push_path();
     
     if(!appn.empty()){
         if(slashappn && pth != "/"){
@@ -82,7 +86,9 @@ void set_working_directory(path npth, string appn, bool slashappn, bool canon, b
         pth = pth.parent_path();
     }
 
-    if(pth != "/") pth += "/";
+    if(*pth.string().rbegin() != '/') pth += "/";
+    
+    if(push) push_path();
     
     if(findafter.empty()){
         load_selec();
@@ -92,6 +98,20 @@ void set_working_directory(path npth, string appn, bool slashappn, bool canon, b
     
     lp = dolp;
     refr = true;
+}
+
+void hist_go_back(){
+    if(pathhisti > 0){
+        set_working_directory(path_stack[--pathhisti], "", false, false, false, true, false);
+    }
+//    cout << pathhisti;
+//    getchar();
+}
+
+void hist_go_forward(){
+    if(pathhisti < path_stack.size() - 1){
+        set_working_directory(path_stack[++pathhisti], "", false, false, false, true, false);
+    }
 }
 
 void tickup(){
@@ -122,14 +142,6 @@ void tickdown3(){
     if(selec > pathentrs.size() - 1){
         selec = selec - (pathentrs.size() - 1);
     }
-}
-
-void decrement(int& strpos){
-    if(strpos > 0) strpos--;
-}
-
-void increment(int& strpos, string& input){
-    if(strpos < input.size()) strpos++;
 }
 
 void delchar(int& strpos, string& input){
@@ -168,7 +180,7 @@ void go_right(){
 
 void exit_path(){
     if(exists(pth.parent_path())){
-        set_working_directory(pth.parent_path().parent_path(), "", false, false, false, true);
+        set_working_directory(pth.parent_path().parent_path(), "", false, false, false, true, true);
     }
 }
 
@@ -195,29 +207,4 @@ string canon_selec(path& pth, vector<dirent>& pathentrs, int& selec){
     return lk;
 }
 
-//void jump_to(path& to, bool slash, bool& refr, bool& lp){
-//    pathselnum[pth.string()] = selec;
-//    pth = to;
-//    if(slash) pth += "/";
-//    refr = lp = true;
-//    selec = pathselnum[pth.string()];
-//}
-//
-//void jump_to(string& to, bool slash, bool& refr, bool& lp){
-//    pathselnum[pth.string()] = selec;
-//    pth = to;
-//    if(slash) pth += "/";
-//    refr = lp = true;
-//    selec = pathselnum[pth.string()];
-//}
-//
-//void jump_to(const char* to, bool slash, bool& refr, bool& lp){
-//    pathselnum[pth.string()] = selec;
-//    pth = to;
-//    if(slash) pth += "/";
-//    refr = lp = true;
-//    selec = pathselnum[pth.string()];
-//}
-
 #endif /* FEXPMICRO_H */
-

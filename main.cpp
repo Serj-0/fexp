@@ -30,8 +30,6 @@ void char_result();
 string get_string_input(string msg);
 void print_info();
 
-//TODO create set_working_directory function to replace repetitions
-
 int main(int argc, char** args){
     root = !getuid();
 
@@ -51,6 +49,8 @@ int main(int argc, char** args){
     init_pair(PAIR_NOREAD, COLOR_RED, COLOR_BLACK);
     init_pair(PAIR_NOREAD_SELECTED, COLOR_RED, COLOR_BLUE);
 
+    push_path();
+    
     int cs;
 
     list_dir(pth, pathentrs);
@@ -196,11 +196,11 @@ int main(int argc, char** args){
             break;
         case KEY_HOME:
             //            jump_to(getenv("HOME"), true, refr, lp);
-            set_working_directory(getenv("HOME"), "", false, false, false, true);
+            set_working_directory(getenv("HOME"), "", false, false, false, true, true);
             break;
         case '/':
             //            jump_to("/", false, refr, lp);
-            set_working_directory("/", "", false, false, false, true);
+            set_working_directory("/", "", false, false, false, true, true);
             break;
         case 18: //^r
             delfile:;
@@ -232,29 +232,26 @@ int main(int argc, char** args){
             break;
         case KEY_DC:
             goto delfile;
-            //        case 263: //^h
-            //            targselec = pathentrs[selec].path;
-            //            fexpconf::show_hidden = !fexpconf::show_hidden;
-            //            lp = refr = true;
-            //            break;
-            //TODO add ability to move forward in history as well
-            //go back
-        case 127:
-            goback:;
-            pop_path();
+        case 263: //^h
+            targselec = pathentrs[selec].path;
+            fexpconf::show_hidden = !fexpconf::show_hidden;
+            lp = refr = true;
             break;
-        case KEY_BACKSPACE:
-            goto goback;
-        case '\b':
-            goto goback;
+            //go back
+        case '<':
+            hist_go_back();
+            break;
+        case '>':
+            hist_go_forward();
+            break;
             //TODO add open file command
         }
 
         //enter directory
         if(appn && pathentrs.size() > 0){
-            set_working_directory(pth, pathentrs[selec].path, true, false, false, true);
+            set_working_directory(pth, pathentrs[selec].path, true, false, false, true, true);
         }else if(jmp && pathentrs.size() > 0){
-            set_working_directory(pathentrs[selec].rpath, "", false, true, true, true,
+            set_working_directory(pathentrs[selec].rpath, "", false, true, true, true, true,
                     canonical(pathentrs[selec].rpath).filename().string());
         }
 
@@ -436,7 +433,6 @@ void print_dir(){
 }
 
 //TODO finish file/dir information section
-
 void print_info(){
     int halfw = win->_maxx / 2;
     dirent& selp = pathentrs[selec];
@@ -582,19 +578,19 @@ void string_search(){
 
                 if(srchentrs[srchsel].isdir){
                     fnd /= srchentrs[srchsel].path;
-                    set_working_directory(fnd, "", false, true, false, true);
+                    set_working_directory(fnd, "", false, true, false, true, true);
                 }else{
                     pathentrs = srchentrs;
-                    set_working_directory(fnd, "", false, true, false, false);
+                    set_working_directory(fnd, "", false, true, false, false, true);
                     selec = srchsel;
                 }
 
                 goto over;
             }else if(input == "/"){
-                set_working_directory("/", "", false, false, false, true);
+                set_working_directory("/", "", false, false, false, true, true);
                 goto over;
             }else if(input == "~"){
-                set_working_directory(getenv("HOME"), "", false, false, false, true);
+                set_working_directory(getenv("HOME"), "", false, false, false, true, true);
                 goto over;
                 /* * COMMANDS * */
             }else if(input.find_first_of('?') != input.npos){
