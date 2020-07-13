@@ -448,9 +448,20 @@ void print_info(){
     win->_curx = halfw;
     win->_cury = 1;
     
-    //TODO truncate file path string if it breaches the bound of its line
-    string fullpath = "# File Path: " + selp.rpath.string();
-    printw(fullpath.c_str());
+    string fpstr = "# File Path: ";
+    string fpfp = selp.rpath.string();
+    
+    if(fpstr.size() + fpfp.size() > halfw){
+//        cout << "halfw: " << halfw << "\n"
+//                << "fpstr: " << fpstr.size() << "\n"
+//                << "fpfp: " << fpfp.size() << "\n";
+//        getchar();
+        
+        fpfp = fpfp.substr((fpstr.size() + fpfp.size()) - halfw + 3);
+        fpfp = "..." + fpfp;
+    }
+    
+    printw((fpstr + fpfp).c_str());
 
     win->_curx = halfw;
     win->_cury = 2;
