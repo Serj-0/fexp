@@ -251,7 +251,7 @@ int main(int argc, char** args){
         if(appn && pathentrs.size() > 0){
             set_working_directory(pth, pathentrs[selec].path, true, false, false, true, true);
         }else if(jmp && pathentrs.size() > 0){
-            set_working_directory(pathentrs[selec].rpath, "", false, true, true, true, true,
+            set_working_directory(pathentrs[selec].rpath, "", false, true, pathentrs[selec].isnorm, true, true,
                     canonical(pathentrs[selec].rpath).filename().string());
         }
 
@@ -452,11 +452,6 @@ void print_info(){
     string fpfp = selp.rpath.string();
     
     if(fpstr.size() + fpfp.size() > halfw){
-//        cout << "halfw: " << halfw << "\n"
-//                << "fpstr: " << fpstr.size() << "\n"
-//                << "fpfp: " << fpfp.size() << "\n";
-//        getchar();
-        
         fpfp = fpfp.substr((fpstr.size() + fpfp.size()) - halfw + 3);
         fpfp = "..." + fpfp;
     }

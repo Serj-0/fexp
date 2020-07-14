@@ -177,10 +177,10 @@ int clamp(int value, int min, int max){
 
 void go_right(){
     if(pathentrs[selec].canread){
-        if(pathentrs[selec].isdir){
-            lp = refr = appn = true;
-        }else if(pathentrs[selec].islink){
+        if(pathentrs[selec].islink){
             lp = refr = jmp = true;
+        }else if(pathentrs[selec].isdir){
+            lp = refr = appn = true;
         }
     }
 }
