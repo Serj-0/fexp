@@ -4,20 +4,17 @@
 #include <cmath>
 #include <map>
 #include <fstream>
-#include "sys/stat.h"
 #include "fexpconfig.h"
 #include "fexpmicro.h"
+#include <boost/algorithm/string.hpp>
+using namespace std;
+using namespace boost;
+using namespace boost::filesystem;
 
 #define PAIR_BLANK 0
 #define PAIR_NOREAD 1
 #define PAIR_BLANK_SELECTED 2
 #define PAIR_NOREAD_SELECTED 3
-
-using namespace std;
-using namespace boost;
-using namespace boost::filesystem;
-
-//const char* DEL_CHAR = "\b \b";
 
 void print_dir();
 void list_dir(path& pth, vector<dirent>& pathentrs);
@@ -78,10 +75,13 @@ int main(int argc, char** args){
         case KEY_UP:
             goto goup;
         case 'W':
+            goup3:;
             tickup3();
             refr = true;
             break;
             //down
+        case 337:
+            goto goup3;
         case 's':
             godn:;
             tickdown();
@@ -90,9 +90,12 @@ int main(int argc, char** args){
         case KEY_DOWN:
             goto godn;
         case 'S':
+            godn3:;
             tickdown3();
             refr = true;
             break;
+        case 336:
+            goto godn3;
             //enter dir
         case '\n':
             go_right();
@@ -195,11 +198,9 @@ int main(int argc, char** args){
             refr = true;
             break;
         case KEY_HOME:
-            //            jump_to(getenv("HOME"), true, refr, lp);
             set_working_directory(getenv("HOME"), "", false, false, false, true, true);
             break;
         case '/':
-            //            jump_to("/", false, refr, lp);
             set_working_directory("/", "", false, false, false, true, true);
             break;
         case 18: //^r
@@ -244,7 +245,22 @@ int main(int argc, char** args){
         case '>':
             hist_go_forward();
             break;
-            //TODO add open file command
+        case 15://^O
+            string ext = pathentrs[selec].rpath.extension().string();
+            to_lower(ext);
+            string assoc_prog = fexpconf::file_assoc[ext];
+            
+            if(assoc_prog.empty()){
+                string ncmd = get_string_input("No file association for " + ext + ", "
+                        "enter a command to use for this file type: ");
+                to_lower(ncmd);
+                fexpconf::file_assoc[ext] = ncmd;
+                assoc_prog = ncmd;
+            }
+            
+            system_call("cd" + pth.string() + ";" + assoc_prog + " " + pathentrs[selec].rpath.string());
+            
+            break;
         }
 
         //enter directory
@@ -269,22 +285,10 @@ int main(int argc, char** args){
             }
         }
 
-        //        if(!jfile.empty()){
-        //            for(int i = 0; i < pathentrs.size(); i++){
-        //                if(pathentrs[i].path == jfile){
-        //                    selec = i;
-        //                    break;
-        //                }
-        //            }
-        //            jfile.clear();
-        //        }
-
         if(refr) print_dir();
     }
 
-endo:
-    ;
-
+    endo:;
     clear();
     endwin();
 
@@ -352,7 +356,7 @@ string get_string_input(string msg){
         refresh();
     }
 
-over:
+    over:;
     return "";
 }
 
@@ -622,12 +626,9 @@ void string_search(){
                 while((dpos = cmd.find_first_of('$'), dpos != cmd.npos)){
                     cmd.replace(dpos, 1, srchstr);
                 }
-
-                clear();
-                //TODO replace with fork
-                std::system(("cd " + pth.string() + ";" + cmd).c_str());
-
-                clear();
+                
+                system_call("cd " + pth.string() + ";" + cmd);
+                
                 lp = true;
                 goto over;
             }

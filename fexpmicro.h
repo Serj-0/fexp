@@ -30,7 +30,6 @@ bool root;
 map<string, int> pathselnum;
 std::ofstream dbglog;
 string targselec = "";
-string jfile = "";
 
 bool refr = false;
 bool lp = false;
@@ -212,6 +211,15 @@ string canon_selec(path& pth, vector<dirent>& pathentrs, int& selec){
     }
     
     return lk;
+}
+
+int system_call(string cmd){
+    clear();
+    int r = std::system(cmd.c_str());
+    clear();
+    noecho();
+    keypad(win, true);
+    return r;
 }
 
 #endif /* FEXPMICRO_H */
