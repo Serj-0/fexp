@@ -442,7 +442,6 @@ void print_dir(){
     refresh();
 }
 
-//TODO finish file/dir information section
 void print_info(){
     int halfw = win->_maxx / 2;
     dirent& selp = pathentrs[selec];
@@ -476,7 +475,38 @@ void print_info(){
 
     win->_curx = halfw;
     win->_cury = 5;
-    printw(("# Last Modified: " + to_string(selp.lastmodtime)).c_str());
+    printw(("# Last Modified: " + string(asctime(localtime(&selp.lastmodtime)))).c_str());
+    
+    string sz;
+    
+    if(!selp.isdir && can_read(selp.rpath)){
+        uintmax_t fsize = file_size(selp.rpath);
+        
+        int tpi = 0;
+        int factor = 1024 * 1024 * 1024;
+        while(factor){
+            long long div = fsize / factor;
+            if(div){
+                double decs = static_cast<double>(fsize) / static_cast<double>(factor);
+                sz = to_string(decs) + data_size_units[tpi];
+                break;
+            }
+            tpi++;
+            factor /= 1024;
+        }
+    }else{
+        sz = "N/A";
+    }
+    
+    win->_curx = halfw;
+    win->_cury = 6;
+    printw(("# File Size: " + sz).c_str());
+    
+    for(int i = 7; i < win->_maxy; i++){
+        win->_curx = halfw;
+        win->_cury = i;
+        printw("#");
+    }
 }
 
 void list_dir(path& pth, vector<dirent>& pathentrs){
@@ -491,7 +521,7 @@ void list_dir(path& pth, vector<dirent>& pathentrs){
         bool isdir;
         bool islink;
         bool canread;
-        long modtime;
+        long long modtime;
 
         try{
             isnorm = is_regular(it->path());

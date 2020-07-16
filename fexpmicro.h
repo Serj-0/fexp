@@ -16,6 +16,7 @@ struct dirent{
     string path;
     bool isnorm, isdir, islink, canread;
     long lastmodtime;
+    long filesize;
 };
 
 vector<path> path_stack;
@@ -30,6 +31,8 @@ bool root;
 map<string, int> pathselnum;
 std::ofstream dbglog;
 string targselec = "";
+
+const string data_size_units[4] = {" GBs", " MBs", " KBss", " Bytes"};
 
 bool refr = false;
 bool lp = false;
