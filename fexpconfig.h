@@ -76,6 +76,7 @@ void (*optionsaver[4])(void*, ofstream&) = {
 string conf_version;
 bool show_hidden = true;
 bool prompt_delall = true;
+bool soft_del = false;
 int hist_max_size;
 
 map<string, string> file_assoc;
@@ -90,8 +91,8 @@ confdesc confoptions[confoptcnt] = {
     {"[Config Version]", CONFTYPE_STRING, &conf_version},
     {"[Show Hidden Files]", CONFTYPE_BOOL, &show_hidden},
     {"[Prompt Recursive Deletion]", CONFTYPE_BOOL, &prompt_delall},
-//move deleted files to ~/local/share/Trash    {""}
-    {"[Max History Size]", CONFTYPE_INT, &hist_max_size}
+    {"[Max History Size]", CONFTYPE_INT, &hist_max_size},
+    {"[Move Deleted Files to Trash]", CONFTYPE_BOOL, &soft_del}
 };
 
 string cfg_pulled;
