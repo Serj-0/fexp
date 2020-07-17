@@ -218,10 +218,16 @@ int main(int argc, char** args){
                         if(fexpconf::prompt_delall){
                             strget = get_string_input("Directory is not empty. Delete anyway? [y/n] ");
                         }else{
-                            strget = "y";
+                            strget = "Y";
                         }
 
+                        //TODO implement move del files to trash dir config option
                         if(strget == "Y" || strget == "y"){
+                            if(fexpconf::soft_del){
+//                                copy_directory(rmfile, getenv())
+                            }
+                            
+                            
                             remove_all(rmfile);
                             lp = true;
                         }

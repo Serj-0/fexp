@@ -86,7 +86,7 @@ void load_conf();
 void save_conf();
 
 //TODO more configuration options
-const int confoptcnt = 4;
+const int confoptcnt = 5;
 confdesc confoptions[confoptcnt] = {
     {"[Config Version]", CONFTYPE_STRING, &conf_version},
     {"[Show Hidden Files]", CONFTYPE_BOOL, &show_hidden},
