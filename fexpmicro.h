@@ -105,8 +105,6 @@ void hist_go_back(){
     if(pathhisti > 0){
         set_working_directory(path_stack[--pathhisti], "", false, false, false, true, false);
     }
-//    cout << pathhisti;
-//    getchar();
 }
 
 void hist_go_forward(){
@@ -194,7 +192,13 @@ void exit_path(){
 }
 
 inline bool can_read(const path& pth){
-    return exists(pth) && (root || status(pth).permissions() & perms::group_read);
+    try{
+        return exists(pth) && (root || status(pth).permissions() & perms::group_read);
+    }catch(...){
+        cout << "error";
+        getchar();
+        return false;
+    }
 }
 
 inline bool can_write(const path& pth){

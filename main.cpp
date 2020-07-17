@@ -28,10 +28,12 @@ string get_string_input(string msg);
 void print_info();
 
 int main(int argc, char** args){
+    atexit(fexpconf::save_conf);
+    
     root = !getuid();
 
     fexpconf::validate_conf();
-    fexpconf::load_conf();
+    if(!fexpconf::confloaddone) fexpconf::load_conf();
 
     pth = argc > 1 ? string(args[1]) : current_path();
     if(pth != "/") pth += "/";
@@ -479,7 +481,7 @@ void print_info(){
     
     string sz;
     
-    if(!selp.isdir && can_read(selp.rpath)){
+    if(!selp.isdir && selp.canread){
         uintmax_t fsize = file_size(selp.rpath);
         
         int tpi = 0;
