@@ -229,4 +229,37 @@ int system_call(string cmd){
     return r;
 }
 
+void gen_trash_info(path& file){
+    filesystem::ofstream ost(getenv("HOME") + string("/.local/share/Trash/info/") + file.filename().string() + string(".trashinfo"));
+    
+    ost << "[Trash Info]\n";
+    ost << "Path=" << file.string() << "\n";
+    
+    const time_t t = time(0);
+    tm* tmp = localtime(&t);
+    ost << "DeletionDate=" << 1900 + tmp->tm_year << "-";
+    
+    ost.fill('0');
+    ost.width(2);
+    ost << tmp->tm_mon + 1 << "-";
+    
+    ost.fill('0');
+    ost.width(2);
+    ost << tmp->tm_mday << "T";
+    
+    ost.fill('0');
+    ost.width(2);
+    ost << tmp->tm_hour << ":"; 
+    
+    ost.fill('0');
+    ost.width(2);
+    ost << tmp->tm_min << ":";
+    
+    ost.fill('0');
+    ost.width(2);
+    ost << tmp->tm_sec;
+    
+    ost.close();
+}
+
 #endif /* FEXPMICRO_H */

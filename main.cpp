@@ -221,17 +221,22 @@ int main(int argc, char** args){
                             strget = "Y";
                         }
 
-                        //TODO implement move del files to trash dir config option
                         if(strget == "Y" || strget == "y"){
                             if(fexpconf::soft_del){
-//                                copy_directory(rmfile, getenv())
+                                copy_directory(rmfile,
+                                        getenv("HOME") + string("/.local/share/Trash/files/" + rmfile.filename().string()));
+                                gen_trash_info(rmfile);
                             }
-                            
                             
                             remove_all(rmfile);
                             lp = true;
                         }
                     }else{
+                        if(fexpconf::soft_del){
+                            copy_file(rmfile,
+                                    getenv("HOME") + string("/.local/share/Trash/files/" + rmfile.filename().string()));
+                            gen_trash_info(rmfile);   
+                        }
                         remove(rmfile);
                         lp = true;
                     }
