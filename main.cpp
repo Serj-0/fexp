@@ -42,6 +42,7 @@ int main(int argc, char** args){
     start_color();
     noecho();
     keypad(win, true);
+    set_escdelay(0);
 
     init_pair(PAIR_BLANK, COLOR_WHITE, COLOR_BLACK);
     init_pair(PAIR_BLANK_SELECTED, COLOR_WHITE, COLOR_BLUE);
@@ -324,7 +325,7 @@ string get_string_input(string msg){
 
     while(c = getch()){
         switch(c){
-        case '`':
+        case 27:
             goto over;
         case KEY_LEFT:
             decrement(strpos);
@@ -359,8 +360,8 @@ string get_string_input(string msg){
         printw(input.c_str());
 
         attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
-        win->_curx = win->_maxx - 13;
-        printw("'`' to cancel");
+        win->_curx = win->_maxx - 15;
+        printw("'Esc' to cancel");
         win->_curx = 0;
         attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
 
@@ -524,6 +525,8 @@ void print_info(){
 
 void list_dir(path& pth, vector<dirent>& pathentrs){
     pathentrs.clear();
+    if(!can_read(pth)) return;
+    
     directory_iterator end;
     win->_curx = 0;
     win->_cury = 0;
@@ -604,7 +607,7 @@ void string_search(){
 
     while(c = getch()){
         switch(c){
-        case '`':
+        case 27:
             goto over;
         case KEY_LEFT:
             decrement(strpos);
@@ -638,7 +641,7 @@ void string_search(){
             if(srchsel > -1){
                 fnd = srchpth;
 
-                if(srchentrs[srchsel].isdir){
+                if(srchentrs[srchsel].canread && srchentrs[srchsel].isdir){
                     fnd /= srchentrs[srchsel].path;
                     set_working_directory(fnd, "", false, true, false, true, true);
                 }else{
@@ -687,7 +690,8 @@ void string_search(){
         string fname = "";
         srchpth = fullpath;
         srchsel = -1;
-
+        bool gooddir = false;
+        
         if(!fullpath.empty()){
             if(fullpath[fullpath.size() - 1] == '/'){
                 int slashpos = fullpath.find_last_of('/', fullpath.size() - 2) + 1;
@@ -698,7 +702,7 @@ void string_search(){
                 srchpth = srchpth.parent_path();
             }
 
-            if(is_directory(srchpth)){
+            if((gooddir = can_read(srchpth) && is_directory(srchpth), gooddir)){
                 list_dir(srchpth, srchentrs);
 
                 if(!fname.empty()){
@@ -719,14 +723,14 @@ void string_search(){
         printw("\n");
 
         attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
-        win->_curx = win->_maxx - 13;
-        printw("'`' to cancel");
+        win->_curx = win->_maxx - 15;
+        printw("'Esc' to cancel");
         win->_curx = 0;
         attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
 
         printw(("||" + input).c_str());
 
-        attron(COLOR_PAIR(PAIR_BLANK_SELECTED));
+        attron(COLOR_PAIR(PAIR_BLANK_SELECTED + !gooddir));
         printw(("||" + srchpth.string()).c_str());
         if(srchsel > -1){
             printw((" : " + srchentrs[srchsel].path).c_str());
@@ -736,7 +740,7 @@ void string_search(){
                 printw("/");
             }
         }
-        attroff(COLOR_PAIR(PAIR_BLANK_SELECTED));
+        attroff(COLOR_PAIR(PAIR_BLANK_SELECTED + !gooddir));
         win->_curx = strpos + 2;
         refresh();
     }

@@ -9,8 +9,8 @@ namespace fexpconf{
 using namespace std;
 using namespace boost::filesystem;
 
-//const char* FEXP_CONF_PATH = "/usr/share/fexp/fexp.conf";//for release
-const char* FEXP_CONF_PATH = "fexp.conf";//for testing
+//const char* FEXP_CONF_PATH = "fexp.conf";//for testing
+const char* FEXP_CONF_PATH = "/usr/share/fexp/fexp.conf";//for release
 const char* FEXP_CONF_URL = "https://raw.githubusercontent.com/Serj-0/fexp/master/fexp.conf";
 
 enum confvaltype{
@@ -92,7 +92,7 @@ confdesc confoptions[confoptcnt] = {
     {"[Show Hidden Files]", CONFTYPE_BOOL, &show_hidden},
     {"[Prompt Recursive Deletion]", CONFTYPE_BOOL, &prompt_delall},
     {"[Max History Size]", CONFTYPE_INT, &hist_max_size},
-    {"[Move Deleted Files to Trash]", CONFTYPE_BOOL, &soft_del}
+    {"[Delete Files to Trash]", CONFTYPE_BOOL, &soft_del}
 };
 
 string cfg_pulled;

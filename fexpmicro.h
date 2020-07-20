@@ -32,7 +32,7 @@ map<string, int> pathselnum;
 std::ofstream dbglog;
 string targselec = "";
 
-const string data_size_units[4] = {" GBs", " MBs", " KBss", " Bytes"};
+const string data_size_units[4] = {" GBs", " MBs", " KBs", " Bytes"};
 
 bool refr = false;
 bool lp = false;
@@ -195,14 +195,16 @@ inline bool can_read(const path& pth){
     try{
         return exists(pth) && (root || status(pth).permissions() & perms::group_read);
     }catch(...){
-        cout << "error";
-        getchar();
         return false;
     }
 }
 
 inline bool can_write(const path& pth){
-    return exists(pth) && (root || status(pth).permissions() & perms::group_write);
+    try{
+        return exists(pth) && (root || status(pth).permissions() & perms::group_write);
+    }catch(...){
+        return false;
+    }
 }
 
 string canon_selec(path& pth, vector<dirent>& pathentrs, int& selec){
