@@ -15,11 +15,12 @@ int main(int argc, char** args){
     win = initscr();
     noecho();
     keypad(win, 1);
+	curs_set(0);
 	set_escdelay(0);
     start_color();
     init_colors();
     
-	for(int i = 0; i < 8; i++) add_block();
+	add_block();
 
     print_borders();
 	print_blocks();
@@ -32,18 +33,22 @@ int main(int argc, char** args){
 		switch(c){
 		//MOVE UP
 		case 'w':
+		case 'k':
 		case KEY_UP:
 			blocks[block_selec].selec -= (blocks[block_selec].selec > 0) - (blocks[block_selec].elems.size() - 1) * (blocks[block_selec].selec <= 0);
 			break;
 		//MOVE DOWN
 		case 's':
+		case 'j':
 		case KEY_DOWN:
 			blocks[block_selec].selec += (blocks[block_selec].selec < blocks[block_selec].elems.size() - 1) - (blocks[block_selec].selec >= blocks[block_selec].elems.size() - 1) * (blocks[block_selec].elems.size() - 1);
 			break;
 		case 'S':
+		case 'J':
 			block_selec -= block_selec > 0;
 			break;
 		case 'W':
+		case 'K':
 			block_selec += block_selec < (block_count - 1);
 			break;
 		}

@@ -4,17 +4,21 @@
 #include "fexpmicro.h"
 using namespace std;
 
-int block_count;
-int block_selec;
+unsigned int block_count;
+unsigned int block_selec;
 char border_char = '~';
 char block_selec_char = '^';
-int high_bar_size = 1;
-int low_bar_size = 1;
+unsigned int high_bar_size = 1;
+unsigned int low_bar_size = 1;
 
 struct block{
-    int id;
-    int selec;
+    unsigned int id;
+    unsigned int selec;
+
     vector<string> elems;
+
+	path directory;
+	vector<dir_file> files;
 };
 
 vector<block> blocks;
@@ -47,7 +51,7 @@ void print_borders(){
 	printw("%s", lowbar.c_str());
 }
 
-void print_constrained(string str, string trunc, int maxlen){
+void print_constrained(string str, string trunc, unsigned int maxlen){
 	//TODO impl begining or ending truncation
 	if(str.size() > maxlen) str = str.substr(0, maxlen - trunc.size()).append(trunc);
 	printw(str.c_str());
