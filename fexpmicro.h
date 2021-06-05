@@ -21,7 +21,7 @@ const int
 
 void init_colors(){
     init_pair(PAIR_NONE, COLOR_WHITE, COLOR_BLACK);
-    init_pair(PAIR_SELEC, COLOR_WHITE, COLOR_BLUE);
+    init_pair(PAIR_SELEC, COLOR_BLACK, COLOR_BLUE);
     init_pair(PAIR_LINK, COLOR_CYAN, COLOR_BLACK);
     init_pair(PAIR_LINK_SELEC, COLOR_BLACK, COLOR_CYAN);
     init_pair(PAIR_EXE, COLOR_YELLOW, COLOR_BLACK);
