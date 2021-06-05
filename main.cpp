@@ -19,12 +19,7 @@ int main(int argc, char** args){
     start_color();
     init_colors();
     
-	for(int i = 0; i < 4; i++) add_block();
-
-	for(int i = 0; i < 100; i++) blocks[0].elems.push_back("@@@@@@@@@@@@" + to_string(i));
-	for(int i = 0; i < 100; i++) blocks[1].elems.push_back("!!!!!!!!!!!!" + to_string(i));
-	//for(int i = 0; i < 100; i++) blocks[2].elems.push_back("$$$$$$$$$$$$" + to_string(i));
-	for(int i = 0; i < 100; i++) blocks[3].elems.push_back("************" + to_string(i));
+	for(int i = 0; i < 8; i++) add_block();
 
     print_borders();
 	print_blocks();

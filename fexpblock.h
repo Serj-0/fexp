@@ -7,7 +7,8 @@ using namespace std;
 int block_count;
 int block_selec;
 char border_char = '~';
-int high_bar_size = 0;
+char block_selec_char = '^';
+int high_bar_size = 1;
 int low_bar_size = 1;
 
 struct block{
@@ -40,8 +41,10 @@ void print_borders(){
         mvprintw(y, 0, "%s", brd.c_str());
     }
 	
-	//TODO block selection indicator
-    printw("%s", string(win->_maxx + 1, border_char).c_str());
+	string lowbar = string(block_selec * w + 1, border_char) + string(w - 1, block_selec_char);
+	lowbar.append(string(win->_maxx + 1 - lowbar.size(), border_char));
+
+	printw("%s", lowbar.c_str());
 }
 
 void print_constrained(string str, string trunc, int maxlen){
