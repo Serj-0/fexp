@@ -21,11 +21,13 @@ int main(int argc, char** args){
     
 	for(int i = 0; i < 4; i++) add_block();
 
-	int x = 1;
-	for(int i = 0; i < 100; i++) blocks[x].elems.push_back("@@@@@@@@@@@@" + to_string(i));
+	for(int i = 0; i < 100; i++) blocks[0].elems.push_back("@@@@@@@@@@@@" + to_string(i));
+	for(int i = 0; i < 100; i++) blocks[1].elems.push_back("!!!!!!!!!!!!" + to_string(i));
+	//for(int i = 0; i < 100; i++) blocks[2].elems.push_back("$$$$$$$$$$$$" + to_string(i));
+	for(int i = 0; i < 100; i++) blocks[3].elems.push_back("************" + to_string(i));
 
     print_borders();
-	print_elements(x);
+	print_blocks();
 
 	int c;
 	while(1){
@@ -33,16 +35,26 @@ int main(int argc, char** args){
 		if(c == 27) break;
 
 		switch(c){
+		//MOVE UP
 		case 'w':
-			blocks[x].selec -= (blocks[x].selec > 0) - (blocks[x].elems.size() - 1) * (blocks[x].selec <= 0);
+		case KEY_UP:
+			blocks[block_selec].selec -= (blocks[block_selec].selec > 0) - (blocks[block_selec].elems.size() - 1) * (blocks[block_selec].selec <= 0);
 			break;
+		//MOVE DOWN
 		case 's':
-			blocks[x].selec += (blocks[x].selec < blocks[x].elems.size() - 1) - (blocks[x].selec >= blocks[x].elems.size() - 1) * (blocks[x].elems.size() - 1);
+		case KEY_DOWN:
+			blocks[block_selec].selec += (blocks[block_selec].selec < blocks[block_selec].elems.size() - 1) - (blocks[block_selec].selec >= blocks[block_selec].elems.size() - 1) * (blocks[block_selec].elems.size() - 1);
+			break;
+		case 'S':
+			block_selec -= block_selec > 0;
+			break;
+		case 'W':
+			block_selec += block_selec < (block_count - 1);
 			break;
 		}
 
 		print_borders();
-		print_elements(x);
+		print_blocks();
 		refresh();
 	}
     

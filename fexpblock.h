@@ -39,7 +39,8 @@ void print_borders(){
     while(++y < win->_maxy - low_bar_size){
         mvprintw(y, 0, "%s", brd.c_str());
     }
-
+	
+	//TODO block selection indicator
     printw("%s", string(win->_maxx + 1, border_char).c_str());
 }
 
@@ -50,6 +51,7 @@ void print_constrained(string str, string trunc, int maxlen){
 }
 
 void print_elements(int id){
+	if(blocks[id].elems.size() == 0) return;
 	block& bl = blocks[id];
 	int i = high_bar_size;
 	int w = win->_maxx / block_count;
@@ -63,6 +65,12 @@ void print_elements(int id){
 		print_constrained(blocks[id].elems[e], "...", w - 1);
 		attrset(A_NORMAL);
 		if(++i >= win->_maxy - (low_bar_size + 1)) break;
+	}
+}
+
+void print_blocks(){
+	for(int i = 0; i < block_count; i++){
+		print_elements(i);
 	}
 }
 
