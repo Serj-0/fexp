@@ -1,2 +1,2 @@
 build:
-	$(CXX) -Wall main.cpp -lncurses -lboost_filesystem -o fexp
+	$(CXX) -std=c++20 -Wall main.cpp -lncurses -lboost_filesystem -o fexp

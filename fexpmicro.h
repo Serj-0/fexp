@@ -17,7 +17,16 @@ const int
         PAIR_EXE = 5,
         PAIR_EXE_SELEC = 6,
         PAIR_ERR = 7,
-        PAIR_ERR_SELEC = 8;
+        PAIR_ERR_SELEC = 8
+;
+
+const int
+        UNREADABLE_DIRECTORY = -2,
+        UNREADABLE_FILE = -1,
+        INVALID = 0,
+        READABLE_FILE = 1,
+        READABLE_DIRECTORY = 2
+;
 
 void init_colors(){
     init_pair(PAIR_NONE, COLOR_WHITE, COLOR_BLACK);
@@ -37,5 +46,34 @@ struct dir_file{
 };
 
 WINDOW* win = nullptr;
+
+//TODO change return value to bitmap
+int valid(path p){
+    try{
+        bool regfile = is_regular_file(p);
+        bool dir = is_directory(p);
+
+        if(!regfile && !dir) return INVALID;
+
+        bool sym = is_symlink(p);
+    
+        if(dir){
+            boost::system::error_code c;
+            directory_iterator di(p, c);
+            if(c.failed()) return UNREADABLE_DIRECTORY;
+            return READABLE_DIRECTORY;
+        }else{
+            std::ifstream ist(p.string());
+            if(ist.is_open()){
+                ist.close();
+                return READABLE_FILE;
+            }else{
+                return UNREADABLE_FILE;
+            }
+        }
+    }catch(...){}
+    
+    return INVALID;
+}
 
 #endif /* FEXPMICRO_H */
