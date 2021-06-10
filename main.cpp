@@ -12,11 +12,6 @@ using namespace std;
 using namespace boost::filesystem;
 
 int main(int argc, char** args){
-    cout << valid("/lost+found") << "\n";
-    
-    
-    return 0;
-    //
     win = initscr();
     noecho();
     keypad(win, 1);
@@ -26,7 +21,10 @@ int main(int argc, char** args){
     init_colors();
     
     //TODO load pwd entries
-    for(int i = 0; i < 10; i++) add_block();
+    for(int i = 0; i < 2; i++) add_block();
+    
+    load_to_block(0, "/");
+    load_to_block(1, "/lsrc");
 
     print_borders();
     print_blocks();
@@ -36,19 +34,21 @@ int main(int argc, char** args){
         c = getch();
         if(c == 27) break;
 
+        block& bl = blocks[block_selec];
+        
         switch(c){
         //MOVE UP
         case 'w':
         case 'k':
         case KEY_UP:
-            blocks[block_selec].selec -= (blocks[block_selec].selec > 0) - (blocks[block_selec].elems.size() - 1) * (blocks[block_selec].selec <= 0);
+            bl.selec -= (bl.selec > 0) - (bl.files.size() - 1) * (bl.selec <= 0);
             break;
         //MOVE DOWN
         case 's':
         case 'j':
         case KEY_DOWN:
-            blocks[block_selec].selec += (blocks[block_selec].selec < blocks[block_selec].elems.size() - 1)
-                - (blocks[block_selec].selec >= blocks[block_selec].elems.size() - 1) * (blocks[block_selec].elems.size() - 1);
+            bl.selec += (bl.selec < bl.files.size() - 1)
+                - (bl.selec >= bl.files.size() - 1) * (bl.files.size() - 1);
             break;
         case 'S':
         case 'J':

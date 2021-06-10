@@ -28,6 +28,12 @@ const int
         READABLE_DIRECTORY = 2
 ;
 
+//const uint8_t
+//        READABLE = 1,
+//        DIRECTORY = 2,
+//        SYMLINK = 4
+//;
+
 void init_colors(){
     init_pair(PAIR_NONE, COLOR_WHITE, COLOR_BLACK);
     init_pair(PAIR_SELEC, COLOR_BLACK, COLOR_BLUE);
@@ -41,21 +47,26 @@ void init_colors(){
 
 struct dir_file{
     directory_entry entry;
-    struct stat fstat;
-    bool owned;
+//    struct stat fstat;
+//    bool owned;
+    int status;
+    bool link;
+    path canonical;
 };
 
 WINDOW* win = nullptr;
 
-//TODO change return value to bitmap
+//TODO maybe change return value to bitmap
 int valid(path p){
+//    uint8_t bits;
+    
     try{
         bool regfile = is_regular_file(p);
         bool dir = is_directory(p);
 
         if(!regfile && !dir) return INVALID;
 
-        bool sym = is_symlink(p);
+//        bool sym = is_symlink(p);
     
         if(dir){
             boost::system::error_code c;
@@ -74,6 +85,28 @@ int valid(path p){
     }catch(...){}
     
     return INVALID;
+}
+
+bool compare_dirfile(const dir_file& a, const dir_file& b){
+    return a.entry.path().filename().string() < b.entry.path().filename().string();
+}
+
+//TODO load dir function
+vector<dir_file> load_directory_files(path p){
+    if(valid(p) < 1) return vector<dir_file>();
+    
+    vector<dir_file> files;
+    
+    boost::system::error_code err;
+    
+    directory_iterator it(p);
+    for(directory_entry e : it){
+        files.push_back({e, valid(e.path()), is_symlink(e), read_symlink(e.path(), err)});
+    }
+    
+    sort(files.begin(), files.end(), compare_dirfile);
+    
+    return files;
 }
 
 #endif /* FEXPMICRO_H */

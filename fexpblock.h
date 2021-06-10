@@ -64,7 +64,8 @@ void print_constrained(string str, string trunc, unsigned int maxlen, bool front
 }
 
 void print_elements(int id){
-    if(blocks[id].elems.size() == 0) return;
+    if(blocks[id].files.size() == 0) return;
+    
     block& bl = blocks[id];
     int i = high_bar_size;
     int w = win->_maxx / block_count;
@@ -73,26 +74,40 @@ void print_elements(int id){
     int it = bl.selec / bh;
 
     for(int e = it * bh; e < (it + 1) * bh; e++){
-        if(e > bl.elems.size() - 1) return;
+        if(e > bl.files.size() - 1) return;
         
         move(i + 1, bl.id * w + 1);
-        if(e == bl.selec) attron(COLOR_PAIR(PAIR_SELEC));
-        print_constrained(bl.elems[e], "...", w - 1, false);
+        
+        int atrind = 1 + (e == bl.selec);
+        if(bl.files[e].status < 1){
+            atrind += PAIR_ERR - 1;
+        }else{
+            atrind += (bl.files[e].link << 1);
+        }
+        
+        attron(COLOR_PAIR(atrind));
+        print_constrained(bl.files[e].entry.path().filename().string() + (abs(bl.files[e].status) == READABLE_DIRECTORY ? "/" : "")
+                , "...", w - 1, false);
         attrset(A_NORMAL);
         if(++i >= win->_maxy - (low_bar_size + 1)) break;
     }
 }
 
+//TODO top and bottom bar info
 void print_blocks(){
     for(int i = 0; i < block_count; i++){
         print_elements(i);
     }
 }
 
-//TODO load dir function
-//vector<dir_file> load_directory_files(path p){
-//    
-//}
+void load_to_block(int id, path p){
+    if(valid(p) < 1) return;
+    
+    blocks[id].directory = p;
+    blocks[id].files = load_directory_files(p);
+}
+
+//TODO directory navigation functions
 
 #endif /* FEXPBLOCK_H */
 
