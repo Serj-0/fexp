@@ -27,30 +27,6 @@ void add_block(){
     blocks.push_back({block_count++, 0});
 }
 
-void print_constrained(string str, string trunc, unsigned int maxlen, bool front = false){
-    if(str.size() > maxlen){
-        if(front){
-            str = trunc.append(str.substr(trunc.size(), maxlen - trunc.size()));
-        }else{
-            str = str.substr(0, maxlen - trunc.size()).append(trunc);
-        }
-    }
-
-    printw(str.c_str());
-}
-
-string constrained(string str, string trunc, unsigned int maxlen, bool front = false){
-    if(str.size() > maxlen){
-        if(front){
-            str = trunc.append(str.substr(trunc.size(), maxlen - trunc.size()));
-        }else{
-            str = str.substr(0, maxlen - trunc.size()).append(trunc);
-        }
-    }
-    
-    return str;
-}
-
 void print_borders(){
     int w = win->_maxx / block_count;
     
@@ -60,9 +36,9 @@ void print_borders(){
     
     for(int i = 0; i < block_count; i++){
         move(high_bar_size, w * i);
-        string bldir = constrained(blocks[i].directory.string(), "...", w - 1, true);
+        string bldir = _constrained(blocks[i].directory.string(), "...", w - 1, true);
         attron(COLOR_PAIR(PAIR_SELEC));
-        print_constrained(bldir, "...", w - 1, true);
+        _print_constrained(bldir, "...", w - 1, true);
     }
     attrset(A_NORMAL);
     
@@ -85,6 +61,32 @@ void print_borders(){
     printw("%s", lowbar.c_str());
 }
 
+void print_filename(dir_file file, int id, print_constraint cst = {-1}, int e = -1){
+    block& bl = blocks[id];
+    
+    int atrind = 1 + (e == bl.selec);
+    if(file.status < 1){
+        atrind += PAIR_ERR - 1;
+    }else{
+        atrind += (file.islink << 1);
+    }
+
+    attron(COLOR_PAIR(atrind));
+    print_constrained(file.entry.path().filename().string() + (abs(file.status) == READABLE_DIRECTORY ? "/" : ""), cst);
+    attrset(A_NORMAL);
+}
+
+void print_filelink(dir_file_link file, print_constraint cst = {-1}, bool selec = false){
+    int atrind = 1 + selec;
+    if(file.status < 1){
+        atrind += PAIR_ERR - 1;
+    }
+
+    attron(COLOR_PAIR(atrind));
+    print_constrained(file.pth.string() + (abs(file.status) == READABLE_DIRECTORY ? "/" : ""), cst);
+    attrset(A_NORMAL);
+}
+
 void print_elements(int id){
     if(blocks[id].files.size() == 0) return;
     
@@ -97,21 +99,22 @@ void print_elements(int id){
 
     for(int e = it * bh; e < (it + 1) * bh; e++){
         if(e > bl.files.size() - 1) return;
-        
         move(i + 1, bl.id * w + 1);
         
-        int atrind = 1 + (e == bl.selec);
-        if(bl.files[e].status < 1){
-            atrind += PAIR_ERR - 1;
-        }else{
-            atrind += (bl.files[e].link << 1);
-        }
-        
-        attron(COLOR_PAIR(atrind));
-        print_constrained(bl.files[e].entry.path().filename().string() + (abs(bl.files[e].status) == READABLE_DIRECTORY ? "/" : "")
-                , "...", w - 1, false);
-        attrset(A_NORMAL);
+        print_filename(bl.files[e], id, {w - 1, "...", false}, e);
         if(++i >= win->_maxy - (low_bar_size + 1)) break;
+    }
+}
+
+void print_lowbar(){
+    block& bl = blocks[block_selec];
+    move(win->_maxy, 0);
+    clrtoeol();
+    dir_file& sfile = bl.files[bl.selec];
+    print_filename(sfile, block_selec);
+    if(sfile.islink){
+        printw("%s", " -> ");
+        print_filelink(sfile.canonical);
     }
 }
 
@@ -120,6 +123,7 @@ void print_blocks(){
     for(int i = 0; i < block_count; i++){
         print_elements(i);
     }
+    print_lowbar();
 }
 
 void load_to_block(int id, path p){

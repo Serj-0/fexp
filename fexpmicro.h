@@ -28,12 +28,6 @@ const int
         READABLE_DIRECTORY = 2
 ;
 
-//const uint8_t
-//        READABLE = 1,
-//        DIRECTORY = 2,
-//        SYMLINK = 4
-//;
-
 void init_colors(){
     init_pair(PAIR_NONE, COLOR_WHITE, COLOR_BLACK);
     init_pair(PAIR_SELEC, COLOR_BLACK, COLOR_BLUE);
@@ -45,18 +39,25 @@ void init_colors(){
     init_pair(PAIR_ERR_SELEC, COLOR_WHITE, COLOR_RED);
 }
 
+WINDOW* win = nullptr;
+
+struct dir_file_link{
+    path pth;
+    int status;
+};
+
+
 struct dir_file{
     directory_entry entry;
 //    struct stat fstat;
 //    bool owned;
     int status;
-    bool link;
-    path canonical;
+    bool islink;
+    
+//    path canonical;
+    dir_file_link canonical;
 };
 
-WINDOW* win = nullptr;
-
-//TODO maybe change return value to bitmap
 int valid(path p){
 //    uint8_t bits;
     
@@ -96,16 +97,63 @@ vector<dir_file> load_directory_files(path p){
     
     vector<dir_file> files;
     
-    boost::system::error_code err;
-    
     directory_iterator it(p);
     for(directory_entry e : it){
-        files.push_back({e, valid(e.path()), is_symlink(e), read_symlink(e.path(), err)});
+        dir_file f = {e, valid(e.path()), is_symlink(e)};
+        if(f.islink){
+            boost::system::error_code err;
+            path canon = canonical(f.entry.path(), err);
+            f.canonical = {canon, valid(canon)};
+        }
+        
+        files.push_back(f);
     }
     
     sort(files.begin(), files.end(), compare_dirfile);
     
     return files;
+}
+
+/* PRINT CONSTRAINED */
+
+struct print_constraint{
+    int maxlen;
+    string trunc;
+    bool front;
+};
+
+void _print_constrained(string str, string trunc, unsigned int maxlen, bool front = false){
+    if(str.size() > maxlen){
+        if(front){
+            str = trunc.append(str.substr(trunc.size(), maxlen - trunc.size()));
+        }else{
+            str = str.substr(0, maxlen - trunc.size()).append(trunc);
+        }
+    }
+
+    printw(str.c_str());
+}
+
+void print_constrained(string str, print_constraint cst){
+    if(cst.maxlen == -1) cst.maxlen = win->_maxx + 1 - win->_curx;
+    _print_constrained(str, cst.trunc, cst.maxlen, cst.front);
+}
+
+string _constrained(string str, string trunc, unsigned int maxlen, bool front = false){
+    if(str.size() > maxlen){
+        if(front){
+            str = trunc.append(str.substr(trunc.size(), maxlen - trunc.size()));
+        }else{
+            str = str.substr(0, maxlen - trunc.size()).append(trunc);
+        }
+    }
+    
+    return str;
+}
+
+string constrained(string str, print_constraint cst){
+    if(cst.maxlen == -1) cst.maxlen = win->_maxx + 1 - win->_curx;
+    return _constrained(str, cst.trunc, cst.maxlen, cst.front);
 }
 
 #endif /* FEXPMICRO_H */
