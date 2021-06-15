@@ -6,7 +6,7 @@ using namespace std;
 
 unsigned int block_count;
 unsigned int block_selec;
-char border_char = '~';
+char border_char = '#';
 char block_selec_char = '^';
 unsigned int high_bar_size = 1;
 unsigned int low_bar_size = 1;
@@ -27,14 +27,48 @@ void add_block(){
     blocks.push_back({block_count++, 0});
 }
 
+void print_constrained(string str, string trunc, unsigned int maxlen, bool front = false){
+    if(str.size() > maxlen){
+        if(front){
+            str = trunc.append(str.substr(trunc.size(), maxlen - trunc.size()));
+        }else{
+            str = str.substr(0, maxlen - trunc.size()).append(trunc);
+        }
+    }
+
+    printw(str.c_str());
+}
+
+string constrained(string str, string trunc, unsigned int maxlen, bool front = false){
+    if(str.size() > maxlen){
+        if(front){
+            str = trunc.append(str.substr(trunc.size(), maxlen - trunc.size()));
+        }else{
+            str = str.substr(0, maxlen - trunc.size()).append(trunc);
+        }
+    }
+    
+    return str;
+}
+
 void print_borders(){
+    int w = win->_maxx / block_count;
+    
+    move(high_bar_size, 0);
+
     mvprintw(high_bar_size, 0, "%s", string(win->_maxx + 1, border_char).c_str());
+    
+    for(int i = 0; i < block_count; i++){
+        move(high_bar_size, w * i);
+        string bldir = constrained(blocks[i].directory.string(), "...", w - 1, true);
+        attron(COLOR_PAIR(PAIR_SELEC));
+        print_constrained(bldir, "...", w - 1, true);
+    }
+    attrset(A_NORMAL);
     
     string brd = string(win->_maxx + 1, ' ');
     brd[0] = border_char;
     brd[brd.size() - 1] = border_char;
-
-    int w = win->_maxx / block_count;
 
     for(int i = 1; i < block_count; i++){
             brd[w * i] = border_char;
@@ -49,18 +83,6 @@ void print_borders(){
     lowbar.append(string(win->_maxx + 1 - lowbar.size(), border_char));
 
     printw("%s", lowbar.c_str());
-}
-
-void print_constrained(string str, string trunc, unsigned int maxlen, bool front = false){
-    if(str.size() > maxlen){
-        if(front){
-            str = trunc.append(str.substr(trunc.size(), maxlen - trunc.size()));
-        }else{
-            str = str.substr(0, maxlen - trunc.size()).append(trunc);
-        }
-    }
-
-    printw(str.c_str());
 }
 
 void print_elements(int id){

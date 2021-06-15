@@ -91,7 +91,6 @@ bool compare_dirfile(const dir_file& a, const dir_file& b){
     return a.entry.path().filename().string() < b.entry.path().filename().string();
 }
 
-//TODO load dir function
 vector<dir_file> load_directory_files(path p){
     if(valid(p) < 1) return vector<dir_file>();
     
