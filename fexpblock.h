@@ -110,11 +110,14 @@ void print_lowbar(){
     block& bl = blocks[block_selec];
     move(win->_maxy, 0);
     clrtoeol();
-    dir_file& sfile = bl.files[bl.selec];
-    print_filename(sfile, block_selec);
-    if(sfile.islink){
-        printw("%s", " -> ");
-        print_filelink(sfile.canonical);
+    
+    if(bl.files.size() > 0){
+        dir_file& sfile = bl.files[bl.selec];
+        print_filename(sfile, block_selec);
+        if(sfile.islink){
+            printw("%s", " -> ");
+            print_filelink(sfile.canonical);
+        }
     }
 }
 
@@ -126,6 +129,7 @@ void print_blocks(){
     print_lowbar();
 }
 
+//TODO print error function
 void load_to_block(int id, path p){
     if(valid(p) < 1) return;
     
@@ -134,6 +138,11 @@ void load_to_block(int id, path p){
 }
 
 //TODO directory navigation functions
+void enter_directory(int id, dir_file& e){
+    if(e.status != READABLE_DIRECTORY) return;
+    load_to_block(id, e.entry.path());
+    blocks[block_selec].selec = 0;
+}
 
 #endif /* FEXPBLOCK_H */
 

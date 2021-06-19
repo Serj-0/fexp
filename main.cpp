@@ -24,7 +24,7 @@ int main(int argc, char** args){
     for(int i = 0; i < 2; i++) add_block();
     
     load_to_block(0, "/");
-    load_to_block(1, "/lsrc");
+    load_to_block(1, "/etc/ODBCDataSources");
 
     print_borders();
     print_blocks();
@@ -58,6 +58,17 @@ int main(int argc, char** args){
         case 'K':
             block_selec += block_selec < (block_count - 1);
             break;
+        case 'd':
+        case 'l':
+        case KEY_RIGHT:
+//            load_to_block(block_selec, bl.files[bl.selec].entry.path());
+            enter_directory(block_selec, bl.files[bl.selec]);
+            break;
+        case 'a':
+        case 'h':
+        case KEY_LEFT:
+            load_to_block(block_selec, bl.directory.parent_path());
+            bl.selec = 0;
         }
 
         print_borders();
@@ -66,5 +77,6 @@ int main(int argc, char** args){
     }
     
     endwin();
+
     return 0;
 }

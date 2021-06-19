@@ -9,6 +9,16 @@
 using namespace std;
 using namespace boost::filesystem;
 
+std::ofstream dbgst;
+
+const bool DO_DEBUG_LOG = true;
+void debug_log(string str){
+    if(!DO_DEBUG_LOG) return;
+    dbgst.open("debug_log", ios::app);
+    dbgst << str;
+    dbgst.close();
+}
+
 const int 
         PAIR_NONE = 1,
         PAIR_SELEC = 2,
@@ -65,14 +75,18 @@ int valid(path p){
         bool regfile = is_regular_file(p);
         bool dir = is_directory(p);
 
-        if(!regfile && !dir) return INVALID;
+        if(!regfile && !dir){
+            return INVALID;
+        }
 
 //        bool sym = is_symlink(p);
     
         if(dir){
             boost::system::error_code c;
             directory_iterator di(p, c);
-            if(c.failed()) return UNREADABLE_DIRECTORY;
+            if(c.failed()){
+                return UNREADABLE_DIRECTORY;
+            }
             return READABLE_DIRECTORY;
         }else{
             std::ifstream ist(p.string());
@@ -125,7 +139,7 @@ struct print_constraint{
 void _print_constrained(string str, string trunc, unsigned int maxlen, bool front = false){
     if(str.size() > maxlen){
         if(front){
-            str = trunc.append(str.substr(trunc.size(), maxlen - trunc.size()));
+            str = trunc.append(str.substr(str.size() - (maxlen - trunc.size()), maxlen - trunc.size()));
         }else{
             str = str.substr(0, maxlen - trunc.size()).append(trunc);
         }
@@ -142,7 +156,7 @@ void print_constrained(string str, print_constraint cst){
 string _constrained(string str, string trunc, unsigned int maxlen, bool front = false){
     if(str.size() > maxlen){
         if(front){
-            str = trunc.append(str.substr(trunc.size(), maxlen - trunc.size()));
+            str = trunc.append(str.substr(str.size() - (maxlen - trunc.size()), maxlen - trunc.size()));
         }else{
             str = str.substr(0, maxlen - trunc.size()).append(trunc);
         }
