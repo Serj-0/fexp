@@ -20,11 +20,16 @@ int main(int argc, char** args){
     start_color();
     init_colors();
     
-    //TODO load pwd entries
-    for(int i = 0; i < 2; i++) add_block();
-    
-    load_to_block(0, "/");
-    load_to_block(1, "/etc/ODBCDataSources");
+    //load pwd or from args
+    if(argc > 1){
+        for(int i = 1; i < argc; i++){
+            add_block();
+            load_to_block(i - 1, args[i]);
+        }
+    }else{
+        add_block();
+        load_to_block(0, current_path());
+    }
 
     print_borders();
     print_blocks();
@@ -50,25 +55,40 @@ int main(int argc, char** args){
             bl.selec += (bl.selec < bl.files.size() - 1)
                 - (bl.selec >= bl.files.size() - 1) * (bl.files.size() - 1);
             break;
-        case 'S':
-        case 'J':
+        case 'A':
+        case 'H':
+        case KEY_SLEFT:
             block_selec -= block_selec > 0;
             break;
-        case 'W':
-        case 'K':
+        case 'D':
+        case 'L':
+        case KEY_SRIGHT:
             block_selec += block_selec < (block_count - 1);
             break;
         case 'd':
         case 'l':
         case KEY_RIGHT:
 //            load_to_block(block_selec, bl.files[bl.selec].entry.path());
-            enter_directory(block_selec, bl.files[bl.selec]);
+            enter_selected_directory();
             break;
         case 'a':
         case 'h':
         case KEY_LEFT:
             load_to_block(block_selec, bl.directory.parent_path());
             bl.selec = 0;
+            break;
+        case KEY_NPAGE:
+            bl.selec = min((unsigned long) bl.selec + block_height(), bl.files.size() - 1);
+            break;
+        case KEY_PPAGE:
+            bl.selec = max(0, (int) bl.selec - (block_height()));
+            break;
+        case KEY_HOME:
+            bl.selec = 0;
+            break;
+        case KEY_END:
+            bl.selec = bl.files.size() - 1;
+            break;
         }
 
         print_borders();

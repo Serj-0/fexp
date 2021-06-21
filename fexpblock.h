@@ -6,16 +6,15 @@ using namespace std;
 
 unsigned int block_count;
 unsigned int block_selec;
-char border_char = '#';
-char block_selec_char = '^';
+char border_char = '=';
+char vert_border_char = '|';
+char block_selec_char = '*';
 unsigned int high_bar_size = 1;
 unsigned int low_bar_size = 1;
 
 struct block{
     unsigned int id;
     unsigned int selec;
-
-    vector<string> elems;
 
     path directory;
     vector<dir_file> files;
@@ -27,6 +26,10 @@ void add_block(){
     blocks.push_back({block_count++, 0});
 }
 
+int block_height(){
+    return win->_maxy - high_bar_size - low_bar_size - 1;
+}
+
 void print_borders(){
     int w = win->_maxx / block_count;
     
@@ -34,20 +37,23 @@ void print_borders(){
 
     mvprintw(high_bar_size, 0, "%s", string(win->_maxx + 1, border_char).c_str());
     
+    //block directory
     for(int i = 0; i < block_count; i++){
         move(high_bar_size, w * i);
         string bldir = _constrained(blocks[i].directory.string(), "...", w - 1, true);
+        string pgcnt = ";" + to_string(blocks[i].selec / block_height() + 1) + "\\" + to_string(blocks[i].files.size() / block_height() + 1);
         attron(COLOR_PAIR(PAIR_SELEC));
-        _print_constrained(bldir, "...", w - 1, true);
+        _print_constrained(bldir + pgcnt, "...", w - 1, true);
     }
     attrset(A_NORMAL);
     
+    //vertical walls
     string brd = string(win->_maxx + 1, ' ');
-    brd[0] = border_char;
-    brd[brd.size() - 1] = border_char;
+    brd[0] = vert_border_char;
+    brd[brd.size() - 1] = vert_border_char;
 
     for(int i = 1; i < block_count; i++){
-            brd[w * i] = border_char;
+            brd[w * i] = vert_border_char;
     }
 
     int y = high_bar_size;
@@ -55,6 +61,7 @@ void print_borders(){
         mvprintw(y, 0, "%s", brd.c_str());
     }
 	
+    //lowbar
     string lowbar = string(block_selec * w + 1, border_char) + string(w - 1, block_selec_char);
     lowbar.append(string(win->_maxx + 1 - lowbar.size(), border_char));
 
@@ -137,11 +144,16 @@ void load_to_block(int id, path p){
     blocks[id].files = load_directory_files(p);
 }
 
-//TODO directory navigation functions
 void enter_directory(int id, dir_file& e){
     if(e.status != READABLE_DIRECTORY) return;
     load_to_block(id, e.entry.path());
     blocks[block_selec].selec = 0;
+}
+
+void enter_selected_directory(){
+    if(blocks[block_selec].files.size()){
+        enter_directory(block_selec, blocks[block_selec].files[blocks[block_selec].selec]);
+    }
 }
 
 #endif /* FEXPBLOCK_H */
