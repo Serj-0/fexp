@@ -68,7 +68,6 @@ int main(int argc, char** args){
         case 'd':
         case 'l':
         case KEY_RIGHT:
-//            load_to_block(block_selec, bl.files[bl.selec].entry.path());
             enter_selected_directory();
             break;
         case 'a':
@@ -89,8 +88,26 @@ int main(int argc, char** args){
         case KEY_END:
             bl.selec = bl.files.size() - 1;
             break;
+        case 'E':
+            if(selected_entry()){
+                if(selected_entry()->status == UNREADABLE_DIRECTORY){
+                    set_err_msg("Not Readable!");
+                }else if(selected_entry()->status != READABLE_DIRECTORY){
+                    set_err_msg("Not a Directory!");
+                }else{
+                    add_block();
+                    load_to_block(block_count - 1, selected_entry()->entry.path());
+                }
+            }else{
+                set_err_msg("No Selected Entry!");
+            }
+            break;
+        case 'C':
+            if(block_count > 1) close_block(block_selec);
+            break;
         }
 
+        
         print_borders();
         print_blocks();
         refresh();

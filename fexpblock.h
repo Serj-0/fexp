@@ -28,6 +28,17 @@ void add_block(){
     blocks.push_back({block_count++, 0});
 }
 
+void close_block(int id){
+    if(id < block_count){
+        for(int i = id + 1; i < block_count; i++){
+            blocks[i].id--;
+        }
+        blocks.erase(blocks.begin() + id);
+        block_count--;
+        if(block_selec > block_count - 1) block_selec--;
+    }
+}
+
 int block_height(){
     return win->_maxy - high_bar_size - low_bar_size - 1;
 }
@@ -149,7 +160,6 @@ void print_blocks(){
     print_lowbar();
 }
 
-//TODO print error function
 void load_to_block(int id, path p){
     if(valid(p) < 1) return;
     
@@ -157,9 +167,24 @@ void load_to_block(int id, path p){
     blocks[id].files = load_directory_files(p);
 }
 
+bool block_not_empty(int id){
+    return blocks[id].files.size() > 0;
+}
+
+dir_file* selected_entry(){
+    if(!block_not_empty(block_selec)){
+        set_err_msg("No Selected Entry!");
+        return nullptr;
+    }else{
+        return &blocks[block_selec].files[blocks[block_selec].selec];
+    }
+}
+
 void enter_directory(int id, dir_file& e){
-    if(e.status != READABLE_DIRECTORY){
-        set_err_msg("Not readable!");
+    if(e.status == UNREADABLE_DIRECTORY){
+        set_err_msg("Not Readable!");
+        return;
+    }else if(e.status != READABLE_DIRECTORY){
         return;
     }
     load_to_block(id, e.entry.path());
@@ -167,7 +192,7 @@ void enter_directory(int id, dir_file& e){
 }
 
 void enter_selected_directory(){
-    if(blocks[block_selec].files.size()){
+    if(block_not_empty(block_selec)){
         enter_directory(block_selec, blocks[block_selec].files[blocks[block_selec].selec]);
     }
 }
