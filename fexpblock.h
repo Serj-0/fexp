@@ -22,6 +22,8 @@ struct block{
 
 vector<block> blocks;
 
+string err_msg;
+
 void add_block(){
     blocks.push_back({block_count++, 0});
 }
@@ -41,7 +43,7 @@ void print_borders(){
     for(int i = 0; i < block_count; i++){
         move(high_bar_size, w * i);
         string bldir = _constrained(blocks[i].directory.string(), "...", w - 1, true);
-        string pgcnt = ";" + to_string(blocks[i].selec / block_height() + 1) + "\\" + to_string(blocks[i].files.size() / block_height() + 1);
+        string pgcnt = " " + to_string(blocks[i].selec / block_height() + 1) + "\\" + to_string(blocks[i].files.size() / block_height() + 1);
         attron(COLOR_PAIR(PAIR_SELEC));
         _print_constrained(bldir + pgcnt, "...", w - 1, true);
     }
@@ -94,6 +96,10 @@ void print_filelink(dir_file_link file, print_constraint cst = {-1}, bool selec 
     attrset(A_NORMAL);
 }
 
+void set_err_msg(string msg){
+    err_msg = msg;
+}
+
 void print_elements(int id){
     if(blocks[id].files.size() == 0) return;
     
@@ -126,9 +132,16 @@ void print_lowbar(){
             print_filelink(sfile.canonical);
         }
     }
+    
+    if(err_msg.size()){
+        win->_curx = win->_maxx + 1 - err_msg.size();
+        attron(COLOR_PAIR(PAIR_ERR_SELEC));
+        printw("%s", err_msg.c_str());
+        attrset(A_NORMAL);
+        err_msg.clear();
+    }
 }
 
-//TODO top and bottom bar info
 void print_blocks(){
     for(int i = 0; i < block_count; i++){
         print_elements(i);
@@ -145,7 +158,10 @@ void load_to_block(int id, path p){
 }
 
 void enter_directory(int id, dir_file& e){
-    if(e.status != READABLE_DIRECTORY) return;
+    if(e.status != READABLE_DIRECTORY){
+        set_err_msg("Not readable!");
+        return;
+    }
     load_to_block(id, e.entry.path());
     blocks[block_selec].selec = 0;
 }
