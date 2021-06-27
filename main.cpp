@@ -6,11 +6,13 @@
 #include "ncurses.h"
 #include "boost/filesystem.hpp"
 #include "fexpmicro.h"
+#include "fexpsearch.h"
 #include "fexpconfig.h"
 #include "fexpblock.h"
 using namespace std;
 using namespace boost::filesystem;
 
+//TODO split h files into headers and sources
 int main(int argc, char** args){
     win = initscr();
     noecho();
@@ -105,6 +107,9 @@ int main(int argc, char** args){
             break;
         case 'C':
             if(block_count > 1) close_block(block_selec);
+            break;
+        case ' ':
+            string_prompt("bruh ", win->_maxy);
             break;
         }
         
