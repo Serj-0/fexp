@@ -8,7 +8,7 @@ unsigned int block_count;
 unsigned int block_selec;
 char border_char = '=';
 char vert_border_char = '|';
-char block_selec_char = '*';
+char block_selec_char = '=';
 unsigned int high_bar_size = 1;
 unsigned int low_bar_size = 1;
 
@@ -18,11 +18,14 @@ struct block{
 
     path directory;
     vector<dir_file> files;
+    map<string, int> selec_in_path;
 };
 
 vector<block> blocks;
 
 string err_msg;
+
+//TODO spacebar search prompt
 
 void add_block(){
     blocks.push_back({block_count++, 0});
@@ -74,11 +77,12 @@ void print_borders(){
         mvprintw(y, 0, "%s", brd.c_str());
     }
 	
-    //lowbar
-    string lowbar = string(block_selec * w + 1, border_char) + string(w - 1, block_selec_char);
-    lowbar.append(string(win->_maxx + 1 - lowbar.size(), border_char));
-
-    printw("%s", lowbar.c_str());
+    //lower border
+    printw("%s", string(block_selec * w + 1, border_char).c_str());
+    attron(COLOR_PAIR(PAIR_SELEC));
+    printw("%s", string(w - 1, block_selec_char).c_str());
+    attrset(A_NORMAL);
+    printw("%s", string(win->_maxx + 1 - win->_curx, border_char).c_str());
 }
 
 void print_filename(dir_file file, int id, print_constraint cst = {-1}, int e = -1){
@@ -163,8 +167,12 @@ void print_blocks(){
 void load_to_block(int id, path p){
     if(valid(p) < 1) return;
     
+    blocks[id].selec_in_path[blocks[id].directory.string()] = blocks[id].selec;
+    
     blocks[id].directory = p;
     blocks[id].files = load_directory_files(p);
+    
+    blocks[id].selec = blocks[id].selec_in_path[p.string()];
 }
 
 bool block_not_empty(int id){
@@ -188,7 +196,6 @@ void enter_directory(int id, dir_file& e){
         return;
     }
     load_to_block(id, e.entry.path());
-    blocks[block_selec].selec = 0;
 }
 
 void enter_selected_directory(){

@@ -15,7 +15,7 @@ const bool DO_DEBUG_LOG = true;
 void debug_log(string str){
     if(!DO_DEBUG_LOG) return;
     dbgst.open("debug_log", ios::app);
-    dbgst << str;
+    dbgst << str << "\n";
     dbgst.close();
 }
 
@@ -127,6 +127,11 @@ vector<dir_file> load_directory_files(path p){
     
     return files;
 }
+
+//string slashed_path(string str){
+//    if(*str.rbegin() != '/') str.append(1, '/');
+//    return str;
+//}
 
 /* PRINT CONSTRAINED */
 

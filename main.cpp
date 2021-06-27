@@ -68,13 +68,13 @@ int main(int argc, char** args){
         case 'd':
         case 'l':
         case KEY_RIGHT:
+        case KEY_ENTER:
             enter_selected_directory();
             break;
         case 'a':
         case 'h':
         case KEY_LEFT:
             load_to_block(block_selec, bl.directory.parent_path());
-            bl.selec = 0;
             break;
         case KEY_NPAGE:
             bl.selec = min((unsigned long) bl.selec + block_height(), bl.files.size() - 1);
@@ -97,6 +97,7 @@ int main(int argc, char** args){
                 }else{
                     add_block();
                     load_to_block(block_count - 1, selected_entry()->entry.path());
+                    block_selec = block_count - 1;
                 }
             }else{
                 set_err_msg("No Selected Entry!");
@@ -106,7 +107,6 @@ int main(int argc, char** args){
             if(block_count > 1) close_block(block_selec);
             break;
         }
-
         
         print_borders();
         print_blocks();
