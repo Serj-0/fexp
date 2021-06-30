@@ -12,7 +12,6 @@
 using namespace std;
 using namespace boost::filesystem;
 
-//TODO split h files into headers and sources
 int main(int argc, char** args){
     win = initscr();
     noecho();

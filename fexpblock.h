@@ -25,8 +25,6 @@ vector<block> blocks;
 
 string err_msg;
 
-//TODO spacebar search prompt
-
 void add_block(){
     blocks.push_back({block_count++, 0});
 }
