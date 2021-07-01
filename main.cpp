@@ -108,7 +108,7 @@ int main(int argc, char** args){
             if(block_count > 1) close_block(block_selec);
             break;
         case ' ':
-            string_prompt("bruh ", win->_maxy, search_in_files);
+            string_prompt("", win->_maxy, search_in_files);
             break;
         }
         

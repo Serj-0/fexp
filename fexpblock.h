@@ -186,14 +186,15 @@ dir_file* selected_entry(){
     }
 }
 
-void enter_directory(int id, dir_file& e){
+bool enter_directory(int id, dir_file& e){
     if(e.status == UNREADABLE_DIRECTORY){
         set_err_msg("Not Readable!");
-        return;
+        return false;
     }else if(e.status != READABLE_DIRECTORY){
-        return;
+        return false;
     }
     load_to_block(id, e.entry.path());
+    return true;
 }
 
 void enter_selected_directory(){

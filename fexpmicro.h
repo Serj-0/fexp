@@ -102,6 +102,7 @@ int valid(path p){
     return INVALID;
 }
 
+//TODO ignore case in dirfile sorting
 bool compare_dirfile(const dir_file& a, const dir_file& b){
     return a.entry.path().filename().string() < b.entry.path().filename().string();
 }
