@@ -102,9 +102,19 @@ int valid(path p){
     return INVALID;
 }
 
+string uncased(string str){
+    transform(str.begin(), str.end(), str.begin(), [](char c){
+       if(c >= 'A' || c <= 'Z') c += 32;
+       return c;
+    });
+    return str;
+}
+
 //TODO ignore case in dirfile sorting
 bool compare_dirfile(const dir_file& a, const dir_file& b){
-    return a.entry.path().filename().string() < b.entry.path().filename().string();
+    string s_a = uncased(a.entry.path().filename().string());
+    string s_b = uncased(b.entry.path().filename().string());
+    return s_a < s_b;
 }
 
 vector<dir_file> load_directory_files(path p){

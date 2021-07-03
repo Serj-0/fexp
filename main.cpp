@@ -75,7 +75,8 @@ int main(int argc, char** args){
         case 'a':
         case 'h':
         case KEY_LEFT:
-            load_to_block(block_selec, bl.directory.parent_path());
+//            load_to_block(block_selec, bl.directory.parent_path());
+            exit_directory(block_selec);
             break;
         case KEY_NPAGE:
             bl.selec = min((unsigned long) bl.selec + block_height(), bl.files.size() - 1);
@@ -111,6 +112,8 @@ int main(int argc, char** args){
             string_prompt("", win->_maxy, search_in_files);
             break;
         }
+        
+        //TODO create, delete, move files, etc.
         
         print_borders();
         print_blocks();

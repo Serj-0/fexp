@@ -100,7 +100,6 @@ void string_prompt(string prompt, int y, int (*after_keys)(string&, string&, int
 }
 
 //TODO return true on sigint
-//TODO enter directory from tab complete
 int search_in_files(string& prompt, string& in, int& pos, int& c){
     vector<string> paths;
     for(dir_file f : blocks[block_selec].files){
@@ -115,20 +114,28 @@ int search_in_files(string& prompt, string& in, int& pos, int& c){
             win->_curx = prompt.size();
             printw("%s", in.c_str());
         }else if(c == '\n'){
-            if(i > -1){
-                blocks[block_selec].selec = i;
-                if(enter_directory(block_selec, blocks[block_selec].files[i])){
-                    in.clear();
-                    pos = 0;
-                    return AFTER_KEY_REFRESH;
-                }
-                return AFTER_KEY_EXIT;
+            blocks[block_selec].selec = i;
+            
+            if(enter_directory(block_selec, blocks[block_selec].files[i])){
+                in.clear();
+                pos = 0;
+                return AFTER_KEY_REFRESH;
             }
+            return AFTER_KEY_EXIT;
         }
         
         win->_curx = win->_maxx - paths[i].size() - 1;
         print_filename(blocks[block_selec].files[i], block_selec);
         refresh();
+    }else if(c == '\n' && in == ".."){
+        exit_directory(block_selec);
+        in.clear();
+        pos = 0;
+        
+//        win->_curx = win->_maxx - paths[i].size() - 1;
+//        print_filename(blocks[block_selec].files[i], block_selec);
+//        refresh();
+        return AFTER_KEY_REFRESH;
     }
     
     return AFTER_KEY_NORMAL;

@@ -197,6 +197,10 @@ bool enter_directory(int id, dir_file& e){
     return true;
 }
 
+void exit_directory(int id){
+    load_to_block(id, blocks[id].directory.parent_path());
+}
+
 void enter_selected_directory(){
     if(block_not_empty(block_selec)){
         enter_directory(block_selec, blocks[block_selec].files[blocks[block_selec].selec]);
